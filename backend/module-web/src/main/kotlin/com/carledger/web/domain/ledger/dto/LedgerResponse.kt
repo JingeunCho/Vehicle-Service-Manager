@@ -19,7 +19,7 @@ data class LedgerResponse(
                 id = ledger.id,
                 vehicleId = ledger.vehicle.id,
                 categoryName = ledger.category.name,
-                categoryType = ledger.category.type.name,
+                categoryType = ledger.category.categoryType.name,
                 amount = ledger.amount.toLong(),
                 recordDate = ledger.recordDate,
                 memo = ledger.memo,

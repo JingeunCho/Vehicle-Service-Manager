@@ -4,15 +4,11 @@ import React, { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
-
-const vehicles = [
-    { id: 1, name: "트랙용 GT86" },
-    { id: 2, name: "데일리 XM3" }
-]
+import { useVehicleContext } from '@/context/VehicleContext'
 
 export default function Sidebar({ className = "" }: { className?: string }) {
-    const [selectedVehicle, setSelectedVehicle] = useState(vehicles[0].id)
     const { userEmail, logout } = useAuth()
+    const { vehicles, selectedVehicleId, setSelectedVehicleId, isLoading } = useVehicleContext()
     const pathname = usePathname()
 
     return (
@@ -21,8 +17,35 @@ export default function Sidebar({ className = "" }: { className?: string }) {
                 <h2 className="text-xl font-black text-blue-600 tracking-tight">Car Ledger</h2>
             </div>
 
+            <div className="mb-6">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">차량 선택</h3>
+                <div className="space-y-1.5">
+                    {isLoading ? (
+                        <div className="px-4 py-3 text-sm text-gray-400 animate-pulse">차량 목록 로딩 중...</div>
+                    ) : vehicles && vehicles.length > 0 ? (
+                        vehicles.map((v) => (
+                            <button
+                                key={v.id}
+                                onClick={() => setSelectedVehicleId(v.id)}
+                                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm transition-all ${selectedVehicleId === v.id
+                                    ? 'bg-blue-50 text-blue-600 font-bold border border-blue-100 shadow-sm'
+                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
+                                    }`}
+                            >
+                                <span className="truncate">{v.name}</span>
+                                {v.isPrimary && (
+                                    <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">대표</span>
+                                )}
+                            </button>
+                        ))
+                    ) : (
+                        <div className="px-4 py-3 text-sm text-gray-400 italic">등록된 차량이 없습니다.</div>
+                    )}
+                </div>
+            </div>
+
             <div className="mb-8">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">메뉴 사이트 이동</h3>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">메뉴</h3>
                 <ul className="space-y-2">
                     <li>
                         <Link href="/" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/'

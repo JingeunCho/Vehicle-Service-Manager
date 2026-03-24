@@ -1,5 +1,6 @@
-plugins {
+plugins{
     id("org.springframework.boot")
+    kotlin("plugin.jpa")
 }
 
 dependencies {

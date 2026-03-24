@@ -9,5 +9,5 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-web")
     
     // 텔레그램 공식 봇 라이브러리 예시 (Webhook or Long Polling)
-    implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7")
+    implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
 }

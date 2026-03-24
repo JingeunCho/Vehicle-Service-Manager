@@ -1,23 +1,12 @@
 spring:
+  profiles:
+    active: dev
   application:
     name: car-ledger-bot
   datasource:
-    url: jdbc:mariadb://localhost:3306/car_ledger?useUnicode=true&characterEncoding=utf8
+    url: jdbc:mariadb://localhost:3306/car_ledger?createDatabaseIfNotExist=true
     username: root
-    password: password
+    password: 
     driver-class-name: org.mariadb.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        format_sql: true
-        show_sql: true
-
-server:
-  port: 8081 # Run on port 8081 to avoid collision with Web module
-
-telegram:
-  bot:
-    token: "8396666705:AAHRLS1Hw7_ecY7z8gyERzqB9EX7VE3ZBD0"
-    username: "KR_CM_bot"
+  liquibase:
+    enabled: false

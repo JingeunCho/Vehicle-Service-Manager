@@ -1,5 +1,8 @@
 package com.carledger.core.ledger.domain
 
+import com.carledger.core.category.domain.Category
+import com.carledger.core.common.domain.BaseEntity
+import com.carledger.core.vehicle.domain.Vehicle
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -29,7 +32,7 @@ class Ledger(
     var mileageAtRecord: Int,
 
     @Column(length = 500)
-    var memo: String? = null,
+    var memo: String = "",
 
     // 주유 전용 컬럼 (Nullable)
     @Column(name = "unit_price", precision = 10, scale = 2)

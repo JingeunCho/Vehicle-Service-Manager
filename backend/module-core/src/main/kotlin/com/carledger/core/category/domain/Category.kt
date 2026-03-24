@@ -1,5 +1,6 @@
 package com.carledger.core.category.domain
 
+import com.carledger.core.common.domain.BaseEntity
 import jakarta.persistence.*
 
 @Entity

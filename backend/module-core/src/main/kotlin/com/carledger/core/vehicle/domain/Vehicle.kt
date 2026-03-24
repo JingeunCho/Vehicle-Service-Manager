@@ -1,5 +1,7 @@
 package com.carledger.core.vehicle.domain
 
+import com.carledger.core.common.domain.BaseEntity
+import com.carledger.core.member.domain.Member
 import jakarta.persistence.*
 
 @Entity

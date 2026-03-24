@@ -34,7 +34,7 @@ class AuthController(
 
     @PostMapping("/signup")
     fun signup(@RequestBody request: SignupRequest): ResponseEntity<Map<String, String>> {
-        val encodedPassword = passwordEncoder.encode(request.password)
+        val encodedPassword = passwordEncoder.encode(request.password) ?: throw IllegalArgumentException("올바르지 않은 패스워드")
         memberService.signup(
             email = request.email,
             encodedPassword = encodedPassword,

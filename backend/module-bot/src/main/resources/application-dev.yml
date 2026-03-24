@@ -1,0 +1,13 @@
+server:
+  port: 8081
+
+telegram:
+  bot:
+    name: ${TELEGRAM_BOT_NAME:your_bot_name}
+    token: ${TELEGRAM_BOT_TOKEN:your_bot_token}
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true

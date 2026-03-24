@@ -1,24 +1,17 @@
 "use client"
 
 import React, { useState } from 'react'
-
-// 백엔드 연동 전 프론트엔드 UI용 테스트 데이터
-const mockLedgers = [
-    { id: 1, vehicleName: '트랙용 GT86', date: '2024-03-24', category: 'REFUEL', title: 'GS칼텍스 고급유', amount: 95000, mileage: 15600, memo: '인제 서킷 출발 전 만땅 주유 (하이옥탄 가득)' },
-    { id: 2, vehicleName: '데일리 XM3', date: '2024-03-22', category: 'REFUEL', title: 'S오일 가득 주유', amount: 65000, mileage: 6500, memo: '연비 주행 시작을 위해 가득 채움.' },
-    { id: 3, vehicleName: '트랙용 GT86', date: '2024-03-20', category: 'MAINTENANCE', title: '엔진오일 교환 (모튤 300v)', amount: 150000, mileage: 15400, memo: '서킷 주행 대비 오일 교환 및 하체 점검 완료.' },
-    { id: 4, vehicleName: '데일리 XM3', date: '2024-03-15', category: 'WASH', title: '손세차 (워시홀릭)', amount: 20000, mileage: 6300, memo: '봄맞이 디테일링 세차, 발수 코팅 포함.' },
-    { id: 5, vehicleName: '데일리 XM3', date: '2024-03-10', category: 'ETC', title: '하이패스 충전', amount: 50000, mileage: 6200, memo: '' },
-    { id: 6, vehicleName: '트랙용 GT86', date: '2024-03-05', category: 'REFUEL', title: 'SK엔크린 고급유 주유', amount: 90000, mileage: 14800, memo: '' },
-]
+import { useVehicleContext } from '@/context/VehicleContext'
+import { useLedgers, useCreateLedger } from '@/hooks/useLedgers'
 
 type ModalMode = "NONE" | "ADD" | "VIEW" | "EDIT"
 
 export default function LedgersPage() {
+    const { vehicles, selectedVehicleId, setSelectedVehicleId } = useVehicleContext()
+    const { data: ledgers, isLoading, error } = useLedgers(selectedVehicleId)
     const [modalMode, setModalMode] = useState<ModalMode>("NONE")
     const [selectedLedgerId, setSelectedLedgerId] = useState<number | null>(null)
     const [filterCategory, setFilterCategory] = useState("ALL")
-    const [filterVehicle, setFilterVehicle] = useState("ALL")
 
     const handleOpenAddModal = () => {
         setSelectedLedgerId(null)
@@ -30,13 +23,13 @@ export default function LedgersPage() {
         setModalMode("VIEW")
     }
 
-    const targetLedger = selectedLedgerId ? mockLedgers.find(l => l.id === selectedLedgerId) : null
+    const targetLedger = selectedLedgerId ? ledgers?.find(l => l.id === selectedLedgerId) : null
 
-    const filteredLedgers = mockLedgers.filter(L => {
-        const passCategory = (filterCategory === "ALL") || (L.category === filterCategory)
-        const passVehicle = (filterVehicle === "ALL") || (L.vehicleName === filterVehicle)
-        return passCategory && passVehicle
-    })
+    const filteredLedgers = ledgers?.filter(L => {
+        const passCategory = (filterCategory === "ALL") || (L.categoryType === filterCategory)
+        // 차량 필터는 Context에서 관리되므로 여기서는 카테고리 필터만 수행
+        return passCategory
+    }) || []
 
     const getCategoryBadge = (cat: string) => {
         switch (cat) {
@@ -54,12 +47,12 @@ export default function LedgersPage() {
         return (
             <div className="space-y-6">
                 <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-100 shadow-inner">
-                    <div className="mb-3">{getCategoryBadge(targetLedger.category)}</div>
-                    <h3 className="text-2xl font-black text-gray-900 mb-2 truncate max-w-full text-center px-4">{targetLedger.title}</h3>
+                    <div className="mb-3">{getCategoryBadge(targetLedger.categoryType)}</div>
+                    <h3 className="text-2xl font-black text-gray-900 mb-2 truncate max-w-full text-center px-4">{targetLedger.categoryName}</h3>
                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400"></span>{targetLedger.vehicleName}</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400"></span>{vehicles?.find(v => v.id === targetLedger.vehicleId)?.name || '기타'}</span>
                         <span>|</span>
-                        <span>{targetLedger.date}</span>
+                        <span>{targetLedger.recordDate}</span>
                     </div>
                 </div>
 
@@ -70,7 +63,7 @@ export default function LedgersPage() {
                     </div>
                     <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                         <p className="text-[11px] font-black text-gray-400 uppercase tracking-wider mb-1">기록 시점 주행거리</p>
-                        <p className="text-2xl font-black text-gray-800 tracking-tight">{targetLedger.mileage.toLocaleString()} <span className="text-sm font-bold text-gray-500 opacity-70">km</span></p>
+                        <p className="text-2xl font-black text-gray-800 tracking-tight">{targetLedger.mileageAtRecord.toLocaleString()} <span className="text-sm font-bold text-gray-500 opacity-70">km</span></p>
                     </div>
                 </div>
 
@@ -110,14 +103,15 @@ export default function LedgersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">지출 대상 차량 🚙 *</label>
-                        <select required defaultValue={isEdit && targetLedger?.vehicleName === '데일리 XM3' ? '2' : '1'} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
-                            <option value="1">트랙용 GT86 (Toyota 86)</option>
-                            <option value="2">데일리 XM3 (Renault XM3)</option>
+                        <select required defaultValue={isEdit ? targetLedger?.vehicleId.toString() : (selectedVehicleId?.toString() || '')} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
+                            {vehicles?.map(v => (
+                                <option key={v.id} value={v.id.toString()}>{v.name} ({v.carModel})</option>
+                            ))}
                         </select>
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">지출 카테고리 🏷 *</label>
-                        <select required defaultValue={isEdit ? (targetLedger?.category || 'REFUEL') : 'REFUEL'} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
+                        <select required defaultValue={isEdit ? (targetLedger?.categoryType || 'REFUEL') : 'REFUEL'} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
                             <option value="REFUEL">주유 / 충전 (REFUEL)</option>
                             <option value="MAINTENANCE">정비 / 수리 (MAINTENANCE)</option>
                             <option value="WASH">세차 (WASH)</option>
@@ -129,11 +123,11 @@ export default function LedgersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div className="md:col-span-2">
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">세부 지출 내용 *</label>
-                        <input type="text" required defaultValue={isEdit ? (targetLedger?.title || '') : ''} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 shadow-sm" placeholder="예: 판교 SK주유소 고급유" />
+                        <input type="text" required defaultValue={isEdit ? (targetLedger?.categoryName || '') : ''} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 shadow-sm" placeholder="예: 판교 SK주유소 고급유" />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">결제일 *</label>
-                        <input type="date" required defaultValue={isEdit ? (targetLedger?.date || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm text-sm" />
+                        <input type="date" required defaultValue={isEdit ? (targetLedger?.recordDate || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm text-sm" />
                     </div>
                 </div>
 
@@ -148,7 +142,7 @@ export default function LedgersPage() {
                     <div className="relative">
                         <label className="block text-[13px] font-black text-blue-900 mb-2 ml-1">기록 시점의 주행거리 🚗 *</label>
                         <div className="flex items-center gap-2 relative z-10">
-                            <input type="number" required min={0} defaultValue={isEdit ? (targetLedger?.mileage || '') : ''} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200" placeholder="0" />
+                            <input type="number" required min={0} defaultValue={isEdit ? (targetLedger?.mileageAtRecord || '') : ''} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200" placeholder="0" />
                             <span className="text-sm font-bold text-blue-800 opacity-70 shrink-0">km</span>
                         </div>
                         <p className="absolute -bottom-5 right-6 text-[10px] font-bold text-blue-500">누락 시 연비 계산이 불가능합니다.</p>
@@ -193,13 +187,14 @@ export default function LedgersPage() {
                     <div className="shrink-0 md:w-48">
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">보유 차량 필터</label>
                         <select
-                            value={filterVehicle}
-                            onChange={(e) => setFilterVehicle(e.target.value)}
+                            value={selectedVehicleId?.toString() || 'ALL'}
+                            onChange={(e) => setSelectedVehicleId(Number(e.target.value))}
                             className="bg-gray-50 border border-gray-200 text-gray-800 text-sm font-semibold rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full py-2.5 px-3 outline-none cursor-pointer shadow-sm"
                         >
-                            <option value="ALL">전체 차량 (All Vehicles)</option>
-                            <option value="트랙용 GT86">트랙용 GT86</option>
-                            <option value="데일리 XM3">데일리 XM3</option>
+                            <option value="ALL" disabled>전체 차량 (사이드바 선택)</option>
+                            {vehicles?.map(v => (
+                                <option key={v.id} value={v.id.toString()}>{v.name}</option>
+                            ))}
                         </select>
                     </div>
 
@@ -247,13 +242,13 @@ export default function LedgersPage() {
                                 className="hover:bg-blue-50/40 transition-colors group cursor-pointer"
                             >
                                 <td className="px-6 py-4 align-middle">
-                                    <div className="text-[13px] font-bold text-gray-600">{l.date}</div>
+                                    <div className="text-[13px] font-bold text-gray-600">{l.recordDate}</div>
                                 </td>
                                 <td className="px-6 py-4 truncate">
-                                    <div className="text-sm font-bold text-gray-950 truncate">{l.title}</div>
+                                    <div className="text-sm font-bold text-gray-950 truncate">{l.categoryName}</div>
                                     <div className="flex items-center gap-1.5 mt-1 opacity-80 truncate">
                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
-                                        <div className="text-[11px] font-bold text-gray-500 tracking-tight shrink-0">{l.vehicleName}</div>
+                                        <div className="text-[11px] font-bold text-gray-500 tracking-tight shrink-0">{vehicles?.find(v => v.id === l.vehicleId)?.name || '기타'}</div>
                                         {l.memo && (
                                             <span className="ml-1 text-[11px] font-medium text-gray-400 truncate">
                                                 | {l.memo}
@@ -262,10 +257,10 @@ export default function LedgersPage() {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 align-middle">
-                                    {getCategoryBadge(l.category)}
+                                    {getCategoryBadge(l.categoryType)}
                                 </td>
                                 <td className="px-6 py-4 text-right align-middle">
-                                    <div className="text-[13.5px] font-bold text-gray-700">{l.mileage.toLocaleString()} km</div>
+                                    <div className="text-[13.5px] font-bold text-gray-700">{l.mileageAtRecord.toLocaleString()} km</div>
                                 </td>
                                 <td className="px-6 py-4 text-right align-middle">
                                     <div className="text-[15px] font-black text-gray-900 tracking-tight">{l.amount.toLocaleString()} <span className="text-[11px] font-bold text-gray-400 tracking-normal ml-0.5">원</span></div>

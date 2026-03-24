@@ -3,6 +3,8 @@ package com.carledger.core.bot.service
 import com.carledger.core.bot.domain.BotConnection
 import com.carledger.core.bot.domain.PlatformType
 import com.carledger.core.bot.repository.BotConnectionRepository
+import com.carledger.core.member.domain.Member
+import com.carledger.core.member.service.MemberService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID

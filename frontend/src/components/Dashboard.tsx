@@ -3,15 +3,20 @@
 import React, { useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { useDashboard } from '@/hooks/useDashboard'
+import { useVehicleContext } from '@/context/VehicleContext'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
 export default function Dashboard() {
-    const [vehicleId, setVehicleId] = useState<number>(1) // 임시 하드코딩 (향후 드롭다운 등으로 선택)
-    const { data: dashboard, isLoading, error } = useDashboard(vehicleId)
+    const { selectedVehicleId } = useVehicleContext()
+    const { data: dashboard, isLoading, error } = useDashboard(selectedVehicleId)
 
-    if (isLoading) return <div className="p-8 flex items-center justify-center h-full text-gray-500 font-medium text-lg">대시보드 데이터를 실시간으로 불러오는 중입니다...</div>
-    if (error || !dashboard) return <div className="p-8 flex items-center justify-center h-full text-red-500 font-medium text-lg">데이터 연동 실패! 백엔드 서버가 켜져있는지 확인해주세요. {(error as Error)?.message}</div>
+    if (isLoading) return <div className="p-8 flex items-center justify-center h-full text-gray-500 font-medium text-lg min-h-[400px]">대시보드 데이터를 실시간으로 불러오는 중입니다...</div>
+    if (error || !dashboard) return (
+        <div className="p-8 flex items-center justify-center h-full text-red-500 font-medium text-lg min-h-[400px]">
+            {selectedVehicleId ? '데이터 연동 실패! 백엔드 서버가 켜져있는지 확인해주거나, 해당 차량의 데이터가 있는지 확인해주세요.' : '먼저 차량을 선택하거나 생성해주세요.'}
+        </div>
+    )
 
     // 백엔드 중첩 DTO 응답을 Recharts용 데이터(Flattened)로 변환
     const rechartsMonthlyData = dashboard.monthlyTrend.map(trend => {
@@ -30,7 +35,7 @@ export default function Dashboard() {
         <div className="space-y-6">
             <div className="flex justify-between items-center mb-2">
                 <h2 className="text-2xl font-bold text-gray-800">내 차계부 대시보드 (Live Data)</h2>
-                <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-semibold">차량 ID: {vehicleId}</div>
+                <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-semibold">차량 ID: {selectedVehicleId}</div>
             </div>
 
             {/* Widgets */}

@@ -1,5 +1,6 @@
 package com.carledger.core.vehicle.service
 
+import com.carledger.core.member.service.MemberService
 import com.carledger.core.vehicle.domain.FuelType
 import com.carledger.core.vehicle.domain.Vehicle
 import com.carledger.core.vehicle.repository.VehicleRepository
