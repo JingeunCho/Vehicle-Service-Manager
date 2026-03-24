@@ -41,7 +41,11 @@ class VehicleController(
             carModel = request.carModel,
             licensePlate = request.licensePlate,
             fuelType = request.fuelType,
-            currentMileage = request.currentMileage
+            currentMileage = request.currentMileage,
+            tuningHistory = request.tuningHistory,
+            insuranceDate = request.insuranceDate,
+            oilInterval = request.oilInterval,
+            lastOilChangeDate = request.lastOilChangeDate
         )
         return ResponseEntity.created(URI.create("/api/vehicles/\${vehicle.id}")).body(VehicleResponse.of(vehicle))
     }
@@ -60,8 +64,22 @@ class VehicleController(
             carModel = request.carModel,
             licensePlate = request.licensePlate,
             fuelType = request.fuelType,
-            currentMileage = request.currentMileage
+            currentMileage = request.currentMileage,
+            tuningHistory = request.tuningHistory,
+            insuranceDate = request.insuranceDate,
+            oilInterval = request.oilInterval,
+            lastOilChangeDate = request.lastOilChangeDate
         )
+        return ResponseEntity.ok(VehicleResponse.of(vehicle))
+    }
+
+    @PutMapping("/{id}/primary")
+    fun setPrimaryVehicle(
+        @PathVariable id: Long,
+        authentication: Authentication?
+    ): ResponseEntity<VehicleResponse> {
+        val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
+        val vehicle = vehicleService.setPrimaryVehicle(id, email)
         return ResponseEntity.ok(VehicleResponse.of(vehicle))
     }
 

@@ -1,58 +1,20 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-
-const apiMonthlyTrend = [
-    {
-        month: '10월',
-        details: [
-            { carModel: '트랙용 GT86', amount: 450000 },
-            { carModel: '데일리 XM3', amount: 200000 }
-        ]
-    },
-    {
-        month: '11월',
-        details: [
-            { carModel: '트랙용 GT86', amount: 300000 },
-            { carModel: '데일리 XM3', amount: 220000 }
-        ]
-    },
-    {
-        month: '12월',
-        details: [
-            { carModel: '트랙용 GT86', amount: 800000 },
-            { carModel: '데일리 XM3', amount: 210000 }
-        ]
-    },
-    {
-        month: '1월',
-        details: [
-            { carModel: '트랙용 GT86', amount: 150000 },
-            { carModel: '데일리 XM3', amount: 250000 }
-        ]
-    }
-]
-
-const categoryData = [
-    { name: '주유', value: 400000 },
-    { name: '엔진오일', value: 150000 },
-    { name: '세차', value: 50000 },
-    { name: '보험료', value: 800000 },
-]
+import { useDashboard } from '@/hooks/useDashboard'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
-const mileageData = [
-    { name: '10월', efficiency: 8.5 },
-    { name: '11월', efficiency: 8.2 },
-    { name: '12월', efficiency: 7.1 },
-    { name: '1월', efficiency: 8.8 },
-]
-
 export default function Dashboard() {
+    const [vehicleId, setVehicleId] = useState<number>(1) // 임시 하드코딩 (향후 드롭다운 등으로 선택)
+    const { data: dashboard, isLoading, error } = useDashboard(vehicleId)
+
+    if (isLoading) return <div className="p-8 flex items-center justify-center h-full text-gray-500 font-medium text-lg">대시보드 데이터를 실시간으로 불러오는 중입니다...</div>
+    if (error || !dashboard) return <div className="p-8 flex items-center justify-center h-full text-red-500 font-medium text-lg">데이터 연동 실패! 백엔드 서버가 켜져있는지 확인해주세요. {(error as Error)?.message}</div>
+
     // 백엔드 중첩 DTO 응답을 Recharts용 데이터(Flattened)로 변환
-    const rechartsMonthlyData = apiMonthlyTrend.map(trend => {
+    const rechartsMonthlyData = dashboard.monthlyTrend.map(trend => {
         const dataPoint: any = { month: trend.month }
         trend.details.forEach(detail => {
             dataPoint[detail.carModel] = detail.amount
@@ -60,29 +22,30 @@ export default function Dashboard() {
         return dataPoint
     })
 
-    // details 안에 있는 고유한 차량명들을 추출
     const uniqueCars = Array.from(new Set(
-        apiMonthlyTrend.flatMap(trend => trend.details.map(d => d.carModel))
+        dashboard.monthlyTrend.flatMap(trend => trend.details.map(d => d.carModel))
     ))
 
     return (
         <div className="space-y-6">
+            <div className="flex justify-between items-center mb-2">
+                <h2 className="text-2xl font-bold text-gray-800">내 차계부 대시보드 (Live Data)</h2>
+                <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-semibold">차량 ID: {vehicleId}</div>
+            </div>
+
             {/* Widgets */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
-                    <p className="text-sm font-medium text-gray-500 mb-1">당월 총 지출</p>
-                    <h3 className="text-3xl font-bold text-gray-900">₩ 400,000</h3>
-                    <span className="text-xs text-green-500 font-medium mt-2">▼ 15% 전월 대비</span>
+                    <p className="text-sm font-medium text-gray-500 mb-1">당월 실 지출액</p>
+                    <h3 className="text-3xl font-bold text-gray-900">₩ {dashboard.totalExpenseThisMonth.toLocaleString()}</h3>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
-                    <p className="text-sm font-medium text-gray-500 mb-1">평균 주유 단가 (고급유)</p>
-                    <h3 className="text-3xl font-bold text-gray-900">₩ 1,850 <span className="text-lg text-gray-500 font-normal">/ L</span></h3>
-                    <span className="text-xs text-red-500 font-medium mt-2">▲ 2% 전월 대비</span>
+                    <p className="text-sm font-medium text-gray-500 mb-1">평균 주유 단가</p>
+                    <h3 className="text-3xl font-bold text-gray-900">₩ {dashboard.avgFuelPriceCurrentMonth.toLocaleString()} <span className="text-lg text-gray-500 font-normal">/ L</span></h3>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
                     <p className="text-sm font-medium text-gray-500 mb-1">최근 평균 연비</p>
-                    <h3 className="text-3xl font-bold text-gray-900">8.8 <span className="text-lg text-gray-500 font-normal">km/L</span></h3>
-                    <span className="text-xs text-green-500 font-medium mt-2">▲ 0.4 km/L 향상</span>
+                    <h3 className="text-3xl font-bold text-gray-900">{dashboard.recentAvgMileage} <span className="text-lg text-gray-500 font-normal">km/L</span></h3>
                 </div>
             </div>
 
@@ -125,7 +88,7 @@ export default function Dashboard() {
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={categoryData}
+                                    data={dashboard.categoryDonut}
                                     cx="50%"
                                     cy="50%"
                                     innerRadius={70}
@@ -133,14 +96,13 @@ export default function Dashboard() {
                                     paddingAngle={3}
                                     dataKey="value"
                                     stroke="none"
-                                    cornerRadius={4}
                                 >
-                                    {categoryData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    {dashboard.categoryDonut.map((entry, index) => (
+                                        <Cell key={`cell-\${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    formatter={(value: number) => `₩${value.toLocaleString()}`}
+                                    formatter={(value: number) => `₩\${value.toLocaleString()}`}
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                 />
                                 <Legend iconType="circle" layout="vertical" verticalAlign="middle" align="right" />
@@ -154,16 +116,16 @@ export default function Dashboard() {
                     <h4 className="text-lg font-semibold text-gray-800 mb-6">연비 트렌드 (km/L)</h4>
                     <div className="h-72">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={mileageData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                            <LineChart data={dashboard.mileageTrend} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
                                 <YAxis domain={['dataMin - 1', 'dataMax + 1']} axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dx={-10} />
                                 <Tooltip
-                                    formatter={(value: number) => `${value} km/L`}
+                                    formatter={(value: number) => `\${value} km/L`}
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                 />
                                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                <Line type="monotone" dataKey="efficiency" name="평균 연비 - GT86" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                                <Line type="monotone" dataKey="efficiency" name="평균 연비" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b', strokeWidth: 0 }} activeDot={{ r: 6 }} />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>

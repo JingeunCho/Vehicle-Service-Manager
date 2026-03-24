@@ -35,7 +35,11 @@ class VehicleService(
         carModel: String,
         licensePlate: String,
         fuelType: FuelType,
-        currentMileage: Int
+        currentMileage: Int,
+        tuningHistory: String? = null,
+        insuranceDate: java.time.LocalDate? = null,
+        oilInterval: Int? = null,
+        lastOilChangeDate: java.time.LocalDate? = null
     ): Vehicle {
         val member = memberService.getMemberByEmail(email)
         
@@ -45,7 +49,11 @@ class VehicleService(
             carModel = carModel,
             licensePlate = licensePlate,
             fuelType = fuelType,
-            currentMileage = currentMileage
+            currentMileage = currentMileage,
+            tuningHistory = tuningHistory,
+            insuranceDate = insuranceDate,
+            oilInterval = oilInterval,
+            lastOilChangeDate = lastOilChangeDate
         )
         
         return vehicleRepository.save(vehicle)
@@ -59,7 +67,11 @@ class VehicleService(
         carModel: String?,
         licensePlate: String?,
         fuelType: FuelType?,
-        currentMileage: Int?
+        currentMileage: Int?,
+        tuningHistory: String? = null,
+        insuranceDate: java.time.LocalDate? = null,
+        oilInterval: Int? = null,
+        lastOilChangeDate: java.time.LocalDate? = null
     ): Vehicle {
         val vehicle = getVehicleById(vehicleId, email)
         
@@ -68,7 +80,21 @@ class VehicleService(
         licensePlate?.let { vehicle.licensePlate = it }
         fuelType?.let { vehicle.fuelType = it }
         currentMileage?.let { vehicle.currentMileage = it }
+        tuningHistory?.let { vehicle.tuningHistory = it }
+        insuranceDate?.let { vehicle.insuranceDate = it }
+        oilInterval?.let { vehicle.oilInterval = it }
+        lastOilChangeDate?.let { vehicle.lastOilChangeDate = it }
         
+        return vehicle
+    }
+
+    @Transactional
+    fun setPrimaryVehicle(vehicleId: Long, email: String): Vehicle {
+        val member = memberService.getMemberByEmail(email)
+        vehicleRepository.updateAllIsPrimaryFalse(member.id)
+        
+        val vehicle = getVehicleById(vehicleId, email)
+        vehicle.isPrimary = true
         return vehicle
     }
 
