@@ -1,0 +1,78 @@
+package com.carledger.web.domain.ledger.controller
+
+import com.carledger.core.ledger.service.LedgerService
+import com.carledger.web.domain.ledger.dto.CreateLedgerRequest
+import com.carledger.web.domain.ledger.dto.DashboardResponse
+import com.carledger.web.domain.ledger.dto.LedgerResponse
+import com.carledger.web.domain.ledger.dto.MonthlyTrendDto
+import com.carledger.web.domain.ledger.dto.CarExpenseDetailDto
+import com.carledger.web.domain.ledger.dto.CategoryExpenseDto
+import com.carledger.web.domain.ledger.dto.MonthlyMileageDto
+import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.*
+import java.net.URI
+
+@RestController
+@RequestMapping("/api/ledgers")
+class LedgerController(
+    private val ledgerService: LedgerService
+) {
+
+    @GetMapping("/vehicles/{vehicleId}")
+    fun getLedgers(@PathVariable vehicleId: Long, authentication: Authentication?): ResponseEntity<List<LedgerResponse>> {
+        val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
+        val ledgers = ledgerService.getLedgersByVehicle(vehicleId, email)
+        return ResponseEntity.ok(ledgers.map { LedgerResponse.of(it) })
+    }
+
+    @PostMapping
+    fun createLedger(
+        @RequestBody request: CreateLedgerRequest,
+        authentication: Authentication?
+    ): ResponseEntity<LedgerResponse> {
+        val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
+        val ledger = ledgerService.createLedger(
+            email = email,
+            vehicleId = request.vehicleId,
+            categoryName = request.categoryName,
+            amount = request.amount,
+            recordDate = request.recordDate,
+            memo = request.memo,
+            mileage = request.mileage
+        )
+        return ResponseEntity.created(URI.create("/api/ledgers/\${ledger.id}")).body(LedgerResponse.of(ledger))
+    }
+
+    @GetMapping("/vehicles/{vehicleId}/dashboard")
+    fun getDashboard(@PathVariable vehicleId: Long, authentication: Authentication?): ResponseEntity<DashboardResponse> {
+        val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
+        val analytics = ledgerService.getDashboardAnalytics(vehicleId, email)
+        
+        @Suppress("UNCHECKED_CAST")
+        val response = DashboardResponse(
+            totalExpenseThisMonth = analytics["totalExpenseThisMonth"] as Long,
+            avgFuelPriceCurrentMonth = analytics["avgFuelPriceCurrentMonth"] as Int,
+            recentAvgMileage = analytics["recentAvgMileage"] as Double,
+            monthlyTrend = (analytics["monthlyTrend"] as List<Map<String, Any>>).map { trend ->
+                MonthlyTrendDto(
+                    month = trend["month"] as String,
+                    details = (trend["details"] as List<Map<String, Any>>).map { detail ->
+                        CarExpenseDetailDto(
+                            carModel = detail["carModel"] as String,
+                            amount = detail["amount"] as Long
+                        )
+                    }
+                )
+            },
+            categoryDonut = (analytics["categoryDonut"] as List<Map<String, Any>>).map {
+                CategoryExpenseDto(name = it["name"] as String, value = it["value"] as Long)
+            },
+            mileageTrend = (analytics["mileageTrend"] as List<Map<String, Any>>).map {
+                MonthlyMileageDto(name = it["month"] as String, efficiency = it["efficiency"] as Double)
+            }
+        )
+        
+        return ResponseEntity.ok(response)
+    }
+}

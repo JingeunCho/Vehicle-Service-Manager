@@ -1,0 +1,19 @@
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.DS_Store
+
+# Backend
+backend/build/
+backend/.gradle/
+backend/out/
+backend/.DS_Store
+backend/logs/
+
+# General
+.idea/
+*.iml
+.DS_Store
+/tmp/
