@@ -2,19 +2,36 @@
 
 import React, { useState } from 'react'
 import { useVehicleContext } from '@/context/VehicleContext'
-import { useLedgers, useCreateLedger } from '@/hooks/useLedgers'
+import { useLedgers, useCreateLedger, MaintenanceType, LedgerCategory } from '@/hooks/useLedgers'
 
 type ModalMode = "NONE" | "ADD" | "VIEW" | "EDIT"
+
+const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
+    ENGINE_OIL: '엔진오일',
+    TRANSMISSION_OIL: '미션오일',
+    DIFFERENTIAL_OIL: '데프오일',
+    FRONT_BRAKE_PAD: '전륜 브레이크 패드',
+    REAR_BRAKE_PAD: '후륜 브레이크 패드',
+    FRONT_BRAKE_ROTOR: '전륜 브레이크 로터',
+    REAR_BRAKE_ROTOR: '후륜 브레이크 로터',
+    COOLANT: '냉각수',
+    OTHER: '기타 소모품',
+}
 
 export default function LedgersPage() {
     const { vehicles, selectedVehicleId, setSelectedVehicleId } = useVehicleContext()
     const { data: ledgers, isLoading, error } = useLedgers(selectedVehicleId)
+    const createLedgerMutation = useCreateLedger()
     const [modalMode, setModalMode] = useState<ModalMode>("NONE")
     const [selectedLedgerId, setSelectedLedgerId] = useState<number | null>(null)
-    const [filterCategory, setFilterCategory] = useState("ALL")
+    const [filterCategory, setFilterCategory] = useState<LedgerCategory | "ALL">("ALL")
+    const [selectedCategory, setSelectedCategory] = useState<LedgerCategory>('REFUEL')
+    const [selectedMaintenanceType, setSelectedMaintenanceType] = useState<MaintenanceType | ''>('')
 
     const handleOpenAddModal = () => {
         setSelectedLedgerId(null)
+        setSelectedCategory('REFUEL')
+        setSelectedMaintenanceType('')
         setModalMode("ADD")
     }
 
@@ -26,12 +43,12 @@ export default function LedgersPage() {
     const targetLedger = selectedLedgerId ? ledgers?.find(l => l.id === selectedLedgerId) : null
 
     const filteredLedgers = ledgers?.filter(L => {
-        const passCategory = (filterCategory === "ALL") || (L.categoryType === filterCategory)
+        const passCategory = (filterCategory === "ALL") || (L.category === filterCategory)
         // 차량 필터는 Context에서 관리되므로 여기서는 카테고리 필터만 수행
         return passCategory
     }) || []
 
-    const getCategoryBadge = (cat: string) => {
+    const getCategoryBadge = (cat: LedgerCategory) => {
         switch (cat) {
             case 'REFUEL': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-purple-50 text-purple-700 border border-purple-200">주유</span>
             case 'MAINTENANCE': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-orange-50 text-orange-700 border border-orange-200">정비</span>
@@ -47,8 +64,8 @@ export default function LedgersPage() {
         return (
             <div className="space-y-6">
                 <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-100 shadow-inner">
-                    <div className="mb-3">{getCategoryBadge(targetLedger.categoryType)}</div>
-                    <h3 className="text-2xl font-black text-gray-900 mb-2 truncate max-w-full text-center px-4">{targetLedger.categoryName}</h3>
+                    <div className="mb-3">{getCategoryBadge(targetLedger.category)}</div>
+                    <h3 className="text-2xl font-black text-gray-900 mb-2 truncate max-w-full text-center px-4">{targetLedger.title}</h3>
                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
                         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400"></span>{vehicles?.find(v => v.id === targetLedger.vehicleId)?.name || '기타'}</span>
                         <span>|</span>
@@ -66,6 +83,16 @@ export default function LedgersPage() {
                         <p className="text-2xl font-black text-gray-800 tracking-tight">{targetLedger.mileageAtRecord.toLocaleString()} <span className="text-sm font-bold text-gray-500 opacity-70">km</span></p>
                     </div>
                 </div>
+
+                {targetLedger.maintenanceType && (
+                    <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                        <span className="text-xl">🔧</span>
+                        <div>
+                            <p className="text-xs font-bold text-orange-700 uppercase tracking-wider">소모품 교환</p>
+                            <p className="text-base font-black text-orange-900">{MAINTENANCE_TYPE_LABELS[targetLedger.maintenanceType]}</p>
+                        </div>
+                    </div>
+                )}
 
                 {targetLedger.memo && (
                     <div className="p-5 bg-yellow-50/50 rounded-2xl border border-yellow-100 relative">
@@ -99,11 +126,51 @@ export default function LedgersPage() {
         const isEdit = modalMode === "EDIT"
 
         return (
-            <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setModalMode(isEdit ? "VIEW" : "NONE"); }}>
+            <form className="space-y-6" onSubmit={async (e) => {
+                e.preventDefault()
+                const fd = new FormData(e.currentTarget)
+                const vehicleId = Number(fd.get('vehicleId'))
+                const title = String(fd.get('title') || '')
+                const recordDate = String(fd.get('recordDate') || '')
+                const amount = Number(fd.get('amount') || 0)
+                const mileage = Number(fd.get('mileage') || 0)
+                const memo = String(fd.get('memo') || '')
+
+                if (!vehicleId || !title || !recordDate || !amount) {
+                    alert('필수 항목을 모두 입력해주세요.')
+                    return
+                }
+
+                // 주행거리 하한 검증: 현재 차량 주행거리보다 작은 값은 불가
+                const selectedVehicle = vehicles?.find(v => v.id === vehicleId)
+                if (selectedVehicle && mileage < selectedVehicle.currentMileage) {
+                    alert(`주행거리는 현재 차량 주행거리(${selectedVehicle.currentMileage.toLocaleString()} km)와 같거나 더 크게 입력해주세요.`)
+                    return
+                }
+
+                try {
+                    await createLedgerMutation.mutateAsync({
+                        vehicleId,
+                        category: selectedCategory,
+                        title,
+                        recordDate: new Date(recordDate),
+                        amount,
+                        mileage: mileage || undefined,
+                        memo,
+                        maintenanceType: selectedMaintenanceType || undefined
+                    })
+                    setModalMode("NONE")
+                    setSelectedCategory('REFUEL')
+                    setSelectedMaintenanceType('')
+                } catch (err) {
+                    console.error('저장 실패:', err)
+                    alert('저장 중 오류가 발생했습니다.')
+                }
+            }}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">지출 대상 차량 🚙 *</label>
-                        <select required defaultValue={isEdit ? targetLedger?.vehicleId.toString() : (selectedVehicleId?.toString() || '')} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
+                        <select name="vehicleId" required defaultValue={isEdit ? targetLedger?.vehicleId.toString() : (selectedVehicleId?.toString() || '')} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
                             {vehicles?.map(v => (
                                 <option key={v.id} value={v.id.toString()}>{v.name} ({v.carModel})</option>
                             ))}
@@ -111,7 +178,11 @@ export default function LedgersPage() {
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">지출 카테고리 🏷 *</label>
-                        <select required defaultValue={isEdit ? (targetLedger?.categoryType || 'REFUEL') : 'REFUEL'} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
+                        <select
+                            required
+                            value={isEdit ? (targetLedger?.category || 'REFUEL') : selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value as LedgerCategory)}
+                            className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
                             <option value="REFUEL">주유 / 충전 (REFUEL)</option>
                             <option value="MAINTENANCE">정비 / 수리 (MAINTENANCE)</option>
                             <option value="WASH">세차 (WASH)</option>
@@ -120,14 +191,31 @@ export default function LedgersPage() {
                     </div>
                 </div>
 
+                {/* 소모품 종류 드롭다운 - 카테고리가 MAINTENANCE일 때만 표시 */}
+                {(isEdit ? targetLedger?.category : selectedCategory) === 'MAINTENANCE' && (
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                        <label className="block text-sm font-bold text-orange-700 mb-2">🔧 소모품 교환 종류 (선택)</label>
+                        <select
+                            value={isEdit ? (targetLedger?.maintenanceType || '') : selectedMaintenanceType}
+                            onChange={(e) => setSelectedMaintenanceType(e.target.value as MaintenanceType | '')}
+                            className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none transition font-semibold text-gray-900 cursor-pointer">
+                            <option value="">선택 안함 (일반 정비)</option>
+                            {(Object.keys(MAINTENANCE_TYPE_LABELS) as MaintenanceType[]).map(type => (
+                                <option key={type} value={type}>{MAINTENANCE_TYPE_LABELS[type]}</option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-orange-500 mt-2">소모품 종류를 선택하면 차량 상태에 마지막 교환일이 자동으로 기록됩니다.</p>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div className="md:col-span-2">
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">세부 지출 내용 *</label>
-                        <input type="text" required defaultValue={isEdit ? (targetLedger?.categoryName || '') : ''} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 shadow-sm" placeholder="예: 판교 SK주유소 고급유" />
+                        <input name="title" type="text" required defaultValue={isEdit ? (targetLedger?.title || '') : ''} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 shadow-sm" placeholder="예: 판교 SK주유소 고급유" />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">결제일 *</label>
-                        <input type="date" required defaultValue={isEdit ? (targetLedger?.recordDate || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm text-sm" />
+                        <input name="recordDate" type="date" required defaultValue={isEdit ? (targetLedger?.recordDate || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm text-sm" />
                     </div>
                 </div>
 
@@ -135,29 +223,49 @@ export default function LedgersPage() {
                     <div>
                         <label className="block text-[13px] font-black text-blue-900 mb-2 ml-1">총 결제 금액 💰 *</label>
                         <div className="flex items-center gap-2">
-                            <input type="number" required min={0} defaultValue={isEdit ? (targetLedger?.amount || '') : ''} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200" placeholder="0" />
+                            <input name="amount" type="number" required min={0} defaultValue={isEdit ? (targetLedger?.amount || '') : ''} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200" placeholder="0" />
                             <span className="text-sm font-bold text-blue-800 opacity-70 shrink-0">원</span>
                         </div>
                     </div>
                     <div className="relative">
                         <label className="block text-[13px] font-black text-blue-900 mb-2 ml-1">기록 시점의 주행거리 🚗 *</label>
                         <div className="flex items-center gap-2 relative z-10">
-                            <input type="number" required min={0} defaultValue={isEdit ? (targetLedger?.mileageAtRecord || '') : ''} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200" placeholder="0" />
+                            <input
+                                name="mileage"
+                                type="number"
+                                required
+                                min={(() => {
+                                    const vid = isEdit ? targetLedger?.vehicleId : selectedVehicleId
+                                    return vehicles?.find(v => v.id === vid)?.currentMileage ?? 0
+                                })()}
+                                defaultValue={isEdit ? (targetLedger?.mileageAtRecord || '') : ''}
+                                className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200"
+                                placeholder={String((() => {
+                                    const vid = isEdit ? targetLedger?.vehicleId : selectedVehicleId
+                                    return vehicles?.find(v => v.id === vid)?.currentMileage ?? 0
+                                })())}
+                            />
                             <span className="text-sm font-bold text-blue-800 opacity-70 shrink-0">km</span>
                         </div>
-                        <p className="absolute -bottom-5 right-6 text-[10px] font-bold text-blue-500">누락 시 연비 계산이 불가능합니다.</p>
+                        <p className="absolute -bottom-5 right-6 text-[10px] font-bold text-blue-500">
+                            {(() => {
+                                const vid = isEdit ? targetLedger?.vehicleId : selectedVehicleId
+                                const cur = vehicles?.find(v => v.id === vid)?.currentMileage
+                                return cur ? `최소 ${cur.toLocaleString()} km 이상 입력` : '누락 시 연비 계산이 불가능합니다.'
+                            })()}
+                        </p>
                     </div>
                 </div>
 
                 <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">메모 (선택)</label>
-                    <textarea rows={2} defaultValue={isEdit ? (targetLedger?.memo || '') : ''} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none transition font-semibold text-gray-900 leading-relaxed shadow-sm" placeholder="수리 부품 상세 내역 혹은 기타 메모를 남겨주세요..."></textarea>
+                    <textarea name="memo" rows={2} defaultValue={isEdit ? (targetLedger?.memo || '') : ''} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none transition font-semibold text-gray-900 leading-relaxed shadow-sm" placeholder="수리 부품 상세 내역 혹은 기타 메모를 남겨주세요..."></textarea>
                 </div>
 
                 <div className="pt-6 border-t border-gray-100 flex justify-end gap-3 mt-4">
                     <button type="button" onClick={() => setModalMode(isEdit ? "VIEW" : "NONE")} className="px-6 py-3.5 text-[15px] font-bold text-gray-600 bg-gray-100/80 rounded-xl hover:bg-gray-200 transition">취소</button>
-                    <button type="submit" className="px-6 py-3.5 text-[15px] font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition transform active:scale-95">
-                        {isEdit ? "변경 사항 저장 완료" : "내역 업데이트"}
+                    <button type="submit" disabled={createLedgerMutation.isPending} className="px-6 py-3.5 text-[15px] font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition transform active:scale-95 disabled:opacity-50">
+                        {createLedgerMutation.isPending ? '저장 중...' : (isEdit ? '변경 사항 저장' : '내역 저장')}
                     </button>
                 </div>
             </form>
@@ -201,19 +309,20 @@ export default function LedgersPage() {
                     <div className="w-full overflow-hidden">
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">분류 별 필터 보기</label>
                         <div className="flex flex-nowrap overflow-x-auto pb-1 gap-2 no-scrollbar">
-                            {['ALL', 'REFUEL', 'MAINTENANCE', 'WASH', 'ETC'].map(cat => (
+                            {(['ALL', 'REFUEL', 'MAINTENANCE', 'WASH', 'FIXED_COST', 'ETC'] as const).map(cat => (
                                 <button
                                     key={cat}
-                                    onClick={() => setFilterCategory(cat)}
+                                    onClick={() => setFilterCategory(cat as any)}
                                     className={`px-4 py-2 text-[13px] font-semibold rounded-lg transition-colors border shrink-0 ${filterCategory === cat
-                                            ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
-                                            : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                        ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
+                                        : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                                         }`}
                                 >
                                     {cat === 'ALL' ? '전체 보기' :
                                         cat === 'REFUEL' ? '⛽ 주유 및 충전' :
                                             cat === 'MAINTENANCE' ? '🛠 정비 결제' :
-                                                cat === 'WASH' ? '🚿 세차 용품' : '📦 기타 유지비'}
+                                                cat === 'WASH' ? '🚿 세차 용품' :
+                                                    cat === 'FIXED_COST' ? '💰 세금/보험료' : '📦 기타 유지비'}
                                 </button>
                             ))}
                         </div>
@@ -245,7 +354,7 @@ export default function LedgersPage() {
                                     <div className="text-[13px] font-bold text-gray-600">{l.recordDate}</div>
                                 </td>
                                 <td className="px-6 py-4 truncate">
-                                    <div className="text-sm font-bold text-gray-950 truncate">{l.categoryName}</div>
+                                    <div className="text-sm font-bold text-gray-950 truncate">{l.title}</div>
                                     <div className="flex items-center gap-1.5 mt-1 opacity-80 truncate">
                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
                                         <div className="text-[11px] font-bold text-gray-500 tracking-tight shrink-0">{vehicles?.find(v => v.id === l.vehicleId)?.name || '기타'}</div>
@@ -257,7 +366,7 @@ export default function LedgersPage() {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 align-middle">
-                                    {getCategoryBadge(l.categoryType)}
+                                    {getCategoryBadge(l.category)}
                                 </td>
                                 <td className="px-6 py-4 text-right align-middle">
                                     <div className="text-[13.5px] font-bold text-gray-700">{l.mileageAtRecord.toLocaleString()} km</div>

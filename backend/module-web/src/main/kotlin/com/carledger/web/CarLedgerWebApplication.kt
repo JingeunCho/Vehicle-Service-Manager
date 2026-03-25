@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 
 @SpringBootApplication
 @ComponentScan(basePackages = ["com.carledger.core", "com.carledger.web"])
-@EntityScan(basePackages = ["com.carledger.core.domain"])
+@EntityScan(basePackages = ["com.carledger.core"])
 @EnableJpaRepositories(basePackages = ["com.carledger.core"])
 class CarLedgerWebApplication
 

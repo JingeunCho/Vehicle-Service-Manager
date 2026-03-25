@@ -12,11 +12,14 @@ import javax.crypto.SecretKey
 
 @Component
 class JwtTokenProvider(
-    @Value("\${jwt.secret}") private val secretKey: String,
-    @Value("\${jwt.expiration-time}") private val expirationTime: Long,
+    @param:Value("\${jwt.secret}")
+    private val secretKey: String,
+    @param:Value("\${jwt.expiration}")
+    private val expirationTime: Long,
     private val userDetailsService: UserDetailsService
 ) {
-    private val key: SecretKey = Keys.hmacShaKeyFor(io.jsonwebtoken.io.Decoders.BASE64.decode(secretKey))
+    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
+    private val key: SecretKey = Keys.hmacShaKeyFor(secretKey.toByteArray(Charsets.UTF_8))
 
     fun generateToken(email: String): String {
         val now = Date()
@@ -44,6 +47,7 @@ class JwtTokenProvider(
             Jwts.parser().verifyWith(key).build().parseSignedClaims(token)
             true
         } catch (e: Exception) {
+            log.warn("JWT validation failed: {}", e.message)
             false
         }
     }

@@ -1,133 +1,157 @@
-# 🚗 차계부 및 다중 차량 관리 시스템 (Car Ledger System)
+# 🚗 Vehicle Service Manager (Car Ledger)
 
-> 언제 어디서든 스마트하게 내 차의 지출과 연비를 관리하세요. 
-> 메신저(텔레그램) 봇을 통한 1초 기록부터, 웹 대시보드를 통한 심층 분석까지 제공하는 **SaaS형 다중 차량 관리 플랫폼**입니다.
-
-## 📌 주요 특징 (Key Features)
-
-* **🤖 텔레그램 봇 자동 기록 (Bot Integration)**
-  * 복잡한 앱 실행 없이 메신저에서 한 줄만 입력하면 지출이 자동 분류 및 저장됩니다.
-  * 예: `"주유 고급유 50000원 대성주유소 15000km"` → 정규식 파서가 차계부(Ledger) 항목으로 즉각 매핑하여 저장.
-  * **OTP 기반 계정 연동**: 웹에서 발급된`/start {8자리OTP}` 코드로 텔레그램 계정과 웹 계정을 안전하게 결합 (Webhook/LongPolling 지원).
-* **💻 직관적인 웹 대시보드 (Smart Dashboard)**
-  * **단일 및 다중 차량 통계 완벽 지원**: 내 차의 당월 총 지출, 평균 주유 단가, 연비 트렌드(Line Chart), 카테고리별 지출 비율(Donut Chart)을 한눈에 파악.
-  * `Recharts` 라이브러리를 활용해 N대의 차량 데이터를 겹쳐볼 수 있는 가변형(Flat/Map) 차트 렌더링 도입.
-* **🔒 강력한 보안 및 인증 (Security)**
-  * **Spring Security + JWT (JSON Web Token)** 기반의 안전한 상태 유지 및 API 인가(Authorization).
-  * `BCrypt` 암호화를 통한 사용자(Member) 비밀번호 보호.
-* **📦 도메인-주도(DDD) 마이크로 아키텍처 (Domain-Driven Structure)**
-  * `module-core`, `module-web`, `module-bot` 의 3-Tier 멀티 모듈 아키텍처로 설계되어 추후 트래픽 증가 여부에 따른 개별 스케일링(Scale-Out)이 가능합니다.
-  * 명확한 도메인(Member, Vehicle, Ledger, Bot, Category 등) 기반 패키징으로 뛰어난 응집도와 유지보수성 달성.
+차량 관리 및 차계부(지출 내역) 통합 관리 시스템. 텔레그램 봇 연동, 소모품 이력 자동 추적, 차량 제원 관리 기능을 제공합니다.
 
 ---
 
-## 🛠 기술 스택 (Tech Stack)
+## 🏗️ 기술 스택
 
-### **Backend**
-*   **Language**: Java 21 / Kotlin 2.x
-*   **Framework**: Spring Boot 4.0.4, Spring Security
-*   **Database & ORM**: MariaDB, Spring Data JPA, QueryDSL 7.x
-*   **Bot API**: Telegram LongPolling Bot API (`telegrambots-spring-boot-starter`)
-*   **Build Tool**: Gradle (Kotlin DSL, Multi-module)
-
-### **Frontend**
-*   **Framework**: Next.js 14.x (App Router), React 18
-*   **Styling**: Tailwind CSS
-*   **Charts**: Recharts
-*   **Language**: TypeScript
+| 항목 | 기술 |
+|------|------|
+| 백엔드 | Spring Boot 3.5.x + JDK 21 + Kotlin |
+| DB | MariaDB + Liquibase (마이그레이션 관리) |
+| ORM | Spring Data JPA + QueryDSL 7.1 |
+| 인증 | Spring Security + JWT |
+| 프론트엔드 | Next.js (App Router) + TypeScript + TailwindCSS |
+| 상태관리 | TanStack Query (React Query) |
+| 빌드 | Gradle 멀티모듈 |
+| 봇 | Telegram Bot API (module-bot) |
 
 ---
 
-## 🏗 프로젝트 구조 (Architecture)
+## 📁 프로젝트 구조
 
-본 프로젝트는 의존성 부패를 막고 확장성을 극대화하기 위해 **Gradle Multi-Module**로 구성되어 있습니다.
-
-```text
-📦 Vehicle-Service-Manager
- ┣ 📂 backend
- ┃ ┣ 📂 module-core    # 도메인 모델(Entity), Repository, 핵심 비즈니스 로직(Service) 관장
- ┃ ┣ 📂 module-web     # REST API 컨트롤러, DTO, Spring Security, JWT Auth 담당 (프론트 통신)
- ┃ ┗ 📂 module-bot     # 텔레그램 LongPolling/Webhook 서버, 자연어 파서(Message Parser) 담당
- ┃
- ┗ 📂 frontend         # Next.js 14 기반의 대시보드 및 지출 내역 관리 웹 UI
+```
+Vehicle-Service-Manager/
+├── backend/
+│   ├── module-core/          # 도메인 엔터티, 리포지토리, 서비스
+│   │   └── src/main/kotlin/com/carledger/core/
+│   │       ├── vehicle/domain/   # Vehicle, VehicleSpec, WheelSpec, TireSpec, MaintenanceType
+│   │       ├── ledger/domain/    # Ledger (maintenanceType 필드 포함)
+│   │       ├── member/domain/    # Member
+│   │       ├── category/domain/  # Category
+│   │       └── common/domain/    # BaseEntity
+│   ├── module-web/           # REST API, Spring Security, DTO
+│   │   └── src/main/
+│   │       ├── kotlin/.../vehicle/   # VehicleController, VehicleRequest, VehicleResponse
+│   │       ├── kotlin/.../ledger/    # LedgerController, LedgerRequest, LedgerResponse
+│   │       └── resources/db/
+│   │           ├── changelog-1.0.0.xml  # 초기 스키마
+│   │           └── changelog-1.0.1.xml  # 정규화 마이그레이션
+│   └── module-bot/           # 텔레그램 봇 리스너 & 파서
+├── frontend/
+│   └── src/
+│       ├── app/(dashboard)/
+│       │   ├── vehicles/page.tsx   # 차량 관리 UI
+│       │   └── ledgers/page.tsx    # 차계부 등록/조회 UI
+│       └── hooks/
+│           ├── useVehicles.ts      # 차량 API 훅 + 타입 정의
+│           └── useLedgers.ts       # 차계부 API 훅 + MaintenanceType 타입
+└── README.md
 ```
 
 ---
 
-## 🚀 빠른 시작 (Getting Started)
+## 🗄️ 데이터베이스 스키마 (핵심 테이블)
 
-### 1. Database Setting (MariaDB)
-```sql
-CREATE DATABASE car_ledger DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+### 정규화 구조 (`changelog-1.0.1.xml` 적용 후)
+
 ```
-* `backend/module-web/src/main/resources/application.yml` 및 `module-bot` 하위의 데이터베이스 접속 비밀번호(root / password 등)를 로컬 환경에 맞게 수정해주세요.
+vehicle
+  ├── vehicle_spec (1:1) ─→ front_wheel_id → wheel_spec
+  │                      ─→ rear_wheel_id  → wheel_spec
+  │                      ─→ front_tire_id  → tire_spec
+  │                      └─ rear_tire_id   → tire_spec
+  └── ledger (1:N)
+        └─ maintenance_type VARCHAR(50) NULL
+           (ENGINE_OIL | TRANSMISSION_OIL | DIFFERENTIAL_OIL |
+            FRONT_BRAKE_PAD | REAR_BRAKE_PAD |
+            FRONT_BRAKE_ROTOR | REAR_BRAKE_ROTOR | COOLANT | OTHER)
+```
 
-### 2. Backend Server 실행 (REST API & Web)
+> ⚠️ **주의**: `wheel_spec.offset` 컬럼명은 MariaDB 예약어 충돌로 `wheel_offset`으로 변경됨
+
+---
+
+## 🔑 핵심 설계 결정
+
+### 1. 소모품 이력 ← Ledger 통합
+`MaintenanceRecord` 별도 테이블 없이 `Ledger.maintenanceType` nullable 컬럼으로 통합.
+차계부 1회 등록으로 소모품 교환 이력이 자동 추적됩니다.
+
+```
+차계부 등록 시: category=정비, amount=70000, maintenanceType=ENGINE_OIL
+→ 차량 조회 API: lastMaintenance.ENGINE_OIL.date 자동 계산
+```
+
+### 2. 휠/타이어 교체 이력 보존
+교체 시 기존 row를 삭제하지 않고 새 `WheelSpec`/`TireSpec` row를 생성.
+`VehicleSpec`은 항상 최신 ID만 참조 → 이력 자동 보존.
+
+### 3. 주행거리 단방향 증가 원칙
+백엔드(`LedgerService`)와 프론트엔드 모두에서 현재 차량 주행거리보다 작은 값 입력 불가.
+
+---
+
+## 🚀 실행 방법
+
+### 백엔드
 ```bash
 cd backend
 ./gradlew :module-web:bootRun
 ```
-* 서버가 `localhost:8080` 포트로 기동되며 Database Schema가 자동 생성(`ddl-auto: update` 등) 및 검증됩니다.
 
-### 3. Telegram Bot Server 실행
-* 텔레그램에서 `@BotFather`를 통해 새로운 봇(Token)을 발급받습니다.
-* `module-bot/src/main/resources/application.yml`의 `bot.token`과 `bot.username`을 수정합니다.
-```bash
-cd backend
-./gradlew :module-bot:bootRun
-```
-* 봇 서버는 충돌을 막기 위해 `localhost:8081` 포트로 띄워지며 웹 모듈과 별개로 작동합니다.
-
-### 4. Frontend Web 실행
+### 프론트엔드
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-* 브라우저에서 `http://localhost:3000`에 접속하여 화려한 대시보드를 만나보세요!
+
+### DB 마이그레이션
+서버 시작 시 Liquibase가 자동으로 `changelog-master.xml` → `1.0.0` → `1.0.1` 순서로 적용.
 
 ---
 
-## 💡 개발 진척도 및 향후 목표 (Milestones & Roadmap)
+## 📡 주요 API
 
-지금까지 기획/개발이 완료된 핵심 기능과 앞으로 고도화할 목표를 통합한 리스트입니다.
+| Method | URL | 설명 |
+|--------|-----|------|
+| POST | `/api/auth/login` | 로그인 (JWT 반환) |
+| POST | `/api/auth/signup` | 회원가입 |
+| GET | `/api/vehicles` | 내 차량 목록 (lastMaintenance 포함) |
+| POST | `/api/vehicles` | 차량 등록 |
+| PUT | `/api/vehicles/{id}` | 차량 수정 |
+| GET | `/api/ledgers/vehicles/{vehicleId}` | 차계부 목록 |
+| POST | `/api/ledgers` | 차계부 등록 (maintenanceType 선택) |
+| PUT | `/api/ledgers/{id}` | 차계부 수정 |
+| DELETE | `/api/ledgers/{id}` | 차계부 삭제 |
 
-### 🎨 1. 프론트엔드 (Next.js 웹 애플리케이션)
-**[✅ 완료된 기능]**
-- [x] **공통 대시보드 레이아웃 구축**: Sidebar 요소 및 Tailwind CSS 적용
-- [x] **대시보드 통계 & 차트 (Recharts) UI 구현**: 반응형 그래프와 데이터 위젯 구축
-- [x] **회원가입 및 로그인 페이지 구현**: 커스텀 Hook(`useAuth`)을 활용한 JWT 토큰 로컬 인증 폼 UI 및 리디렉션 파이프라인
-- [x] **내 차량 인벤토리 (관리) 화면**: 신규 차량 다중 등록, 대표 차량(Primary) 논리 전환 UI(Glow Effect) 및 튜닝 내역/점검일 통합 관리 화면 구현
-- [x] **React Query & Axios 기반 API 통신 연동**: 실시간 백엔드 데이터(다중 차량 호환) 파싱 및 차트 동기화 방지 
+---
 
-**[🚀 진행 예정 핵심 목표]**
-- [x] **지출 내역 상세 조회 (Table View)**: 개별 차계부(Ledger) 기록을 테이블 형태로 조회, 검색, 기간별 필터링(Pagination) 기능
-- [x] **수동 차계부 내역 추가 UI**: 텔레그램 봇 외에도 웹 화면에서 카테고리를 눌러 바로 지출을 기록할 수 있는 액션 모달 폼
+## 📌 현재 개발 현황 (2026-03-25 기준)
 
-### ⚙️ 2. 백엔드 핵심 기능 (Spring Boot / DB)
-**[✅ 완료된 기능]**
-- [x] **멀티 모듈 구조 확립**: `module-core`, `module-web`, `module-bot` 간의 의존성 및 Domain-Driven 패키징 리팩토링
-- [x] **보안 및 인증 API (`/api/auth`)**: JWT 서명 발급 및 Spring Security 필터 체인(회원가입/로그인) 파이프라인
-- [x] **고도화된 차량(Vehicle) 관리 API**: 다중 차량 CRUD는 물론, 튜닝 내역/정비 주기/보험 만기일에 대한 확장 필드 및 **단일 트랜잭션 기반 대표 차량(Primary) 스위칭 API** 구축 완료
-- [x] **지출 내역(Ledger) CRUD API**: 차계부 데이터베이스 저장 및 캘린더/통계 조회를 위한 집계(Aggregation) 로직
+### ✅ 완료
+- 차량 기본 CRUD
+- 차량 제원 정규화 (VehicleSpec, WheelSpec, TireSpec)
+- 차계부 CRUD API 연동 (프론트엔드 등록 폼 완성)
+- 소모품 교환 기록 기능 (카테고리 "정비" → 소모품 종류 선택)
+- 주행거리 하한 방어 코드 (프론트 + 백엔드)
+- 텔레그램 봇 계정 연동 및 차계부 파싱
 
-**[🚀 진행 예정 핵심 목표]**
-- [ ] **오피넷(Opinet) 오픈 API 유가 연동**: 주유 금액만 입력해도 해당 일자의 평균 유가를 계산해 주유량(L)을 역산하는 확장 로직
-- [ ] **리스트 페이징 및 검색 필터링 최적화**: 지출 내역이 수만 건 쌓일 것을 대비한 QueryDSL 페이징(Pageable) 동적 쿼리 고도화
+### 🚧 미완료 (다음 구현 필요)
+1. **차계부 수정(EDIT) API 연동** — `useUpdateLedger` 호출 미구현
+2. **차계부 삭제 API 연동** — 삭제 버튼 UI는 있으나 `useDeleteLedger` 호출 미구현
+3. **차량 제원 수정 UI** — VehicleSpec, WheelSpec, TireSpec 수정 폼
+4. **Opinet 연료 가격 연동** — 주유 시 자동 단가 계산
+5. **월별/연비 트렌드 실데이터 연동** — 현재 mock 데이터
 
-### 🤖 3. 메신저 연동 자동화 (Telegram Bot)
-**[✅ 완료된 기능]**
-- [x] **Telegram LongPolling 봇 서버 구축**: 로컬 개발을 위한 텔레그램 소켓 리스너 구현
-- [x] **OTP 기반 계정 바인딩 (`/start {OTP}`)**: 텔레그램 오픈 채팅 아이디를 웹(Member) 회원의 ID번호와 영구 결합하는 인증 처리
-- [x] **자연어 기반 지출 파서 연동**: 텍스트("주유 고급유 50000원 12000km")를 인지하여 Ledger 서비스로 Insert 시키는 단일 차량 베이스 파이프라인
+### ⚠️ 알려진 이슈
+- IDE CSS lint 경고(`Unknown at rule @tailwind`)는 IDE 설정 문제, 빌드에는 영향 없음
+- 프론트엔드 차계부 수정 모달(EDIT)은 UI만 있고 API 저장 미연동
 
-**[🚀 진행 예정 핵심 목표]**
-- [ ] **다중 차량 선택 봇 파싱 처리 로직**: 유저가 2대 이상의 차량을 가졌을 때 "주유 5만원 쏘나타" 와 같이 메시지 안에 차량 모델 키워드를 직접 인식하는 고급 파서(Parser) 고도화
-- [ ] **텔레그램 Inline Keyboard (버튼) 응답**: 봇 파싱이 불확실할 때, "어떤 차량에 등록할까요?" 등의 텔레그램 네이티브 대화형 UI 버튼 렌더링
+---
 
-### 🐳 4. 배포 환경 및 인프라 (DevOps)
-**[🚀 진행 예정 핵심 목표]**
-- [ ] **도커 라이징 (Dockerizing)**: 백엔드 `module-web`, `module-bot` 및 Next.js 프론트엔드를 손쉽게 띄울 수 있도록 Dockerfile 구성
-- [ ] **Docker Compose 구성**: 한 번의 명령어로 `MariaDB`, `Server`, `Bot`, `Client`를 통째로 띄울 수 있는 `docker-compose.yml` 작성
-- [ ] **CI/CD 파이프라인**: GitHub Actions를 통한 브랜치 병합 시 자동 빌드, 테스트 체크, 클라우드 서버 배포 자동화
-- [ ] **텔레그램 Webhook 전환**: 로컬 개발용 LongPolling 방식을 Nginx 등 실서버 HTTPS 프록시로 통하는 Webhook 방식으로 전환
+## 🤝 기여 / 인수인계 참고
+
+자세한 작업 이력 및 TODO는 `task.md` 참조 (`.gemini/antigravity/brain/...`).

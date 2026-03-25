@@ -14,8 +14,18 @@ export default function LoginPage() {
         e.preventDefault()
         try {
             const { data } = await api.post('/auth/login', { email, password })
-            login(data.token, email)
+            console.log('DEBUG: LoginPage - full response data:', JSON.stringify(data));
+
+            // token 또는 accessToken 필드 중 있는 것을 사용 (하위 호환성)
+            const receivedToken = data.token || data.accessToken;
+
+            if (receivedToken) {
+                login(receivedToken, email)
+            } else {
+                setErrorMsg('서버로부터 유효한 토큰(`token` 또는 `accessToken` 필드)을 받지 못했습니다.')
+            }
         } catch (error: any) {
+            console.error('DEBUG: LoginPage - login error:', error);
             setErrorMsg(error.response?.data || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.')
         }
     }
@@ -30,12 +40,14 @@ export default function LoginPage() {
 
                 {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm text-center font-medium border border-red-100">{errorMsg}</div>}
 
-                <form onSubmit={handleLogin} className="space-y-6">
+                <form onSubmit={handleLogin} className="space-y-6" suppressHydrationWarning>
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">이메일</label>
                         <input
                             type="email"
                             required
+                            autoComplete="email"
+                            suppressHydrationWarning
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
@@ -47,6 +59,8 @@ export default function LoginPage() {
                         <input
                             type="password"
                             required
+                            autoComplete="current-password"
+                            suppressHydrationWarning
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                             value={password}
                             onChange={e => setPassword(e.target.value)}

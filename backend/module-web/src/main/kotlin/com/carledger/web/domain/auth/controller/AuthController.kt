@@ -52,7 +52,7 @@ class AuthController(
         
         val token = jwtTokenProvider.generateToken(authentication.name)
         
-        return ResponseEntity.ok(TokenResponse(token))
+        return ResponseEntity.ok(TokenResponse(token = token, accessToken = token))
     }
     
     @GetMapping("/me")

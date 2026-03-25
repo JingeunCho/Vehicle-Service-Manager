@@ -7,6 +7,7 @@ import jakarta.persistence.*
 @Entity
 @Table(name = "vehicle")
 class Vehicle(
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L,
@@ -37,17 +38,20 @@ class Vehicle(
     @Column(name = "insurance_date")
     var insuranceDate: java.time.LocalDate? = null,
 
-    @Column(name = "oil_interval")
-    var oilInterval: Int? = null,
-
-    @Column(name = "last_oil_change_date")
-    var lastOilChangeDate: java.time.LocalDate? = null,
-
     @Column(name = "is_primary", nullable = false)
     var isPrimary: Boolean = false
 
-) : BaseEntity()
+) : BaseEntity() {
+
+    /** 기계적 제원 (구동 방식, 휠, 타이어) */
+    @OneToOne(mappedBy = "vehicle", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.LAZY)
+    var spec: VehicleSpec? = null
+}
 
 enum class FuelType {
     PREMIUM_GASOLINE, REGULAR_GASOLINE, DIESEL, LPG, EV, HYDROGEN
+}
+
+enum class DriveType {
+    FF, FR, MR, RR, AWD
 }

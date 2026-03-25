@@ -35,13 +35,47 @@ class LedgerController(
         val ledger = ledgerService.createLedger(
             email = email,
             vehicleId = request.vehicleId,
-            categoryName = request.categoryName,
+            category = request.category,
+            title = request.title,
             amount = request.amount,
             recordDate = request.recordDate,
             memo = request.memo,
-            mileage = request.mileage
+            mileage = request.mileage,
+            maintenanceType = request.maintenanceType
         )
-        return ResponseEntity.created(URI.create("/api/ledgers/\${ledger.id}")).body(LedgerResponse.of(ledger))
+        return ResponseEntity.created(URI.create("/api/ledgers/${ledger.id}")).body(LedgerResponse.of(ledger))
+    }
+
+    @PutMapping("/{id}")
+    fun updateLedger(
+        @PathVariable id: Long,
+        @RequestBody request: CreateLedgerRequest,
+        authentication: Authentication?
+    ): ResponseEntity<LedgerResponse> {
+        val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
+        val ledger = ledgerService.updateLedger(
+            id = id,
+            email = email,
+            vehicleId = request.vehicleId,
+            category = request.category,
+            title = request.title,
+            amount = request.amount,
+            recordDate = request.recordDate,
+            memo = request.memo,
+            mileage = request.mileage,
+            maintenanceType = request.maintenanceType
+        )
+        return ResponseEntity.ok(LedgerResponse.of(ledger))
+    }
+
+    @DeleteMapping("/{id}")
+    fun deleteLedger(
+        @PathVariable id: Long,
+        authentication: Authentication?
+    ): ResponseEntity<Void> {
+        val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
+        ledgerService.deleteLedger(id, email)
+        return ResponseEntity.noContent().build()
     }
 
     @GetMapping("/vehicles/{vehicleId}/dashboard")

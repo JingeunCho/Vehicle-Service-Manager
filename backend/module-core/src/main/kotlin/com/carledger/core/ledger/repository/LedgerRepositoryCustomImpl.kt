@@ -1,6 +1,7 @@
 package com.carledger.core.ledger.repository
 
 import com.carledger.core.ledger.domain.Ledger
+import com.carledger.core.ledger.domain.LedgerCategory
 import com.carledger.core.ledger.domain.QLedger.ledger
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -24,12 +25,12 @@ class LedgerRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findByVehicleAndCategory(vehicleId: Long, categoryId: Long): List<Ledger> {
+    override fun findByVehicleAndCategory(vehicleId: Long, category: LedgerCategory): List<Ledger> {
         return queryFactory
             .selectFrom(ledger)
             .where(
                 vehicleEq(vehicleId),
-                categoryEq(categoryId),
+                categoryEq(category),
                 ledger.isDeleted.eq(false)
             )
             .orderBy(ledger.recordDate.desc())
@@ -40,8 +41,8 @@ class LedgerRepositoryCustomImpl(
         return vehicleId?.let { ledger.vehicle.id.eq(it) }
     }
 
-    private fun categoryEq(categoryId: Long?): BooleanExpression? {
-        return categoryId?.let { ledger.category.id.eq(it) }
+    private fun categoryEq(category: LedgerCategory?): BooleanExpression? {
+        return category?.let { ledger.category.eq(it) }
     }
 
     private fun dateBetween(startDate: LocalDate?, endDate: LocalDate?): BooleanExpression? {

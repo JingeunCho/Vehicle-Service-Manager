@@ -23,8 +23,14 @@ export const useAuth = () => {
     const login = (token: string, email: string) => {
         localStorage.setItem('token', token);
         localStorage.setItem('userEmail', email);
+        console.log('DEBUG: useAuth - token saved to localStorage');
         setIsAuthenticated(true);
-        router.push('/');
+        setUserEmail(email);
+
+        // 리다이렉트 전 아주 약간의 지연을 더 주어 localStorage 반영 보장
+        setTimeout(() => {
+            window.location.href = '/'; // router.push 대신 강제 새로고침으로 상태 초기화
+        }, 100);
     };
 
     const logout = () => {

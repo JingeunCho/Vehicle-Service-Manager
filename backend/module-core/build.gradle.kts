@@ -15,7 +15,6 @@ dependencies {
     "kapt"("jakarta.persistence:jakarta.persistence-api:3.1.0")
     "kapt"("jakarta.annotation:jakarta.annotation-api:2.1.1")
 
-    implementation("org.liquibase:liquibase-core:4.25.1")
 }
 
 

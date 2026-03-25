@@ -1,11 +1,19 @@
 package com.carledger.core.ledger.domain
 
-import com.carledger.core.category.domain.Category
 import com.carledger.core.common.domain.BaseEntity
+import com.carledger.core.vehicle.domain.MaintenanceType
 import com.carledger.core.vehicle.domain.Vehicle
 import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
+
+enum class LedgerCategory {
+    REFUEL,       // 주유/충전
+    MAINTENANCE,  // 정비/수리
+    WASH,         // 세차
+    FIXED_COST,   // 보험료, 세금 등 고정비
+    ETC           // 기타
+}
 
 @Entity
 @Table(name = "ledger")
@@ -18,9 +26,12 @@ class Ledger(
     @JoinColumn(name = "vehicle_id", nullable = false)
     val vehicle: Vehicle,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    val category: Category,
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    var category: LedgerCategory,
+
+    @Column(nullable = false, length = 100)
+    var title: String,
 
     @Column(name = "record_date", nullable = false)
     var recordDate: LocalDate,
@@ -45,6 +56,18 @@ class Ledger(
     var gasStationName: String? = null,
 
     @Column(name = "is_opinet_auto")
-    var isOpinetAuto: Boolean = false
+    var isOpinetAuto: Boolean = false,
+
+    /**
+     * 소모품 교환 유형 (nullable)
+     * - null: 일반 차계부 기록 (연료비, 보험료, 세차 등)
+     * - not null: 소모품 교환 기록 → 차량 마지막 정비 이력 추적에 활용
+     * 
+     * 예) 엔진오일 교환 시 amount=70000, maintenanceType=ENGINE_OIL
+     *     → 차량 조회 시 마지막 엔진오일 교환일 자동 계산 가능
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "maintenance_type", length = 50)
+    var maintenanceType: MaintenanceType? = null
 
 ) : BaseEntity()

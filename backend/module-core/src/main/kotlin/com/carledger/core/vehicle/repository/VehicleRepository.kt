@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query
 
 interface VehicleRepository : JpaRepository<Vehicle, Long> {
     fun findAllByMemberIdAndIsDeletedFalse(memberId: Long): List<Vehicle>
+    fun existsByMemberIdAndIsDeletedFalse(memberId: Long): Boolean
 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Vehicle v SET v.isPrimary = false WHERE v.member.id = :memberId")

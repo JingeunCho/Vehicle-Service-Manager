@@ -1,4 +1,7 @@
 spring:
+  threads:
+    virtual:
+      enabled: true
   profiles:
     active: dev
   application:
@@ -6,12 +9,12 @@ spring:
   datasource:
     url: jdbc:mariadb://localhost:3306/car_ledger?createDatabaseIfNotExist=true
     username: root
-    password: 
+    password: qwer123$
     driver-class-name: org.mariadb.jdbc.Driver
   liquibase:
-    change-log: classpath:db/changelog/db.changelog-master.xml
+    change-log: classpath:db/changelog-master.xml
     enabled: true
 
 jwt:
-  secret: ${JWT_SECRET:your-256-bit-secret-your-256-bit-secret-your-256-bit-secret}
+  secret: ${JWT_SECRET:c3ByaW5nLWJvb3QtY2FyLWxlZGdlci1zZWNyZXQta2V5LXZhbHVlLTIwMjYtZGVlcG1pbmQtYW50aWdyYXZpdHk=}
   expiration: 3600000 # 1 hour

@@ -1,6 +1,10 @@
 package com.carledger.web.domain.auth.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class TokenResponse(
-    val accessToken: String,
-    val tokenType: String = "Bearer"
+    @JsonProperty("token")
+    val token: String,
+    @JsonProperty("accessToken")
+    val accessToken: String = "" // 하위 호환성 위해 유지
 )

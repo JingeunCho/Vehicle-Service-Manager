@@ -31,27 +31,69 @@ CREATE TABLE IF NOT EXISTS vehicle (
     license_plate VARCHAR(50) NOT NULL,
     fuel_type VARCHAR(20) NOT NULL,
     current_mileage INT NOT NULL DEFAULT 0,
+    is_primary TINYINT(1) NOT NULL DEFAULT 0,
+    drive_type VARCHAR(10),
+    
+    -- Oil Maintenance
+    engine_oil_interval INT,
+    last_engine_oil_change_date DATE,
+    transmission_oil_interval INT,
+    last_transmission_oil_change_date DATE,
+    differential_oil_interval INT,
+    last_differential_oil_change_date DATE,
+
+    -- Wheel Specs (Front/Rear)
+    front_wheel_brand VARCHAR(100),
+    front_wheel_model VARCHAR(100),
+    front_wheel_diameter INT,
+    front_wheel_width FLOAT,
+    front_wheel_offset INT,
+    rear_wheel_brand VARCHAR(100),
+    rear_wheel_model VARCHAR(100),
+    rear_wheel_diameter INT,
+    rear_wheel_width FLOAT,
+    rear_wheel_offset INT,
+
+    -- Tire Specs (Front/Rear)
+    front_tire_brand VARCHAR(100),
+    front_tire_model VARCHAR(100),
+    front_tire_width INT,
+    front_tire_aspect_ratio INT,
+    front_tire_diameter INT,
+    rear_tire_brand VARCHAR(100),
+    rear_tire_model VARCHAR(100),
+    rear_tire_width INT,
+    rear_tire_aspect_ratio INT,
+    rear_tire_diameter INT,
+
+    -- Brake Specs
+    front_brake_pad_brand VARCHAR(100),
+    front_brake_pad_model VARCHAR(100),
+    last_front_brake_pad_change_date DATE,
+    rear_brake_pad_brand VARCHAR(100),
+    rear_brake_pad_model VARCHAR(100),
+    last_rear_brake_pad_change_date DATE,
+    last_front_brake_rotor_change_date DATE,
+    last_rear_brake_rotor_change_date DATE,
+
+    -- Coolant
+    coolant_product_name VARCHAR(100),
+    coolant_last_change_date DATE,
+
+    tuning_history TEXT,
+    insurance_date DATE,
     is_deleted TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (member_id) REFERENCES member(id)
 );
 
-CREATE TABLE IF NOT EXISTS category (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    parent_id BIGINT,
-    name VARCHAR(100) NOT NULL,
-    category_type VARCHAR(50) NOT NULL,
-    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES category(id)
-);
-
 CREATE TABLE IF NOT EXISTS ledger (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     vehicle_id BIGINT NOT NULL,
-    category_id BIGINT NOT NULL,
+    -- Entity 리팩토링: Category 대신 Enum(VARCHAR) 및 title 컬럼 사용
+    category VARCHAR(50) NOT NULL,
+    title VARCHAR(100) NOT NULL,
     record_date DATE NOT NULL,
     amount DECIMAL(15, 2) NOT NULL,
     mileage_at_record INT NOT NULL,
@@ -61,11 +103,11 @@ CREATE TABLE IF NOT EXISTS ledger (
     volume DECIMAL(10, 2),
     gas_station_name VARCHAR(100),
     is_opinet_auto TINYINT(1) DEFAULT 0,
+    maintenance_type VARCHAR(50),
     is_deleted TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (vehicle_id) REFERENCES vehicle(id),
-    FOREIGN KEY (category_id) REFERENCES category(id)
+    FOREIGN KEY (vehicle_id) REFERENCES vehicle(id)
 );
 
 CREATE TABLE IF NOT EXISTS bot_connection (

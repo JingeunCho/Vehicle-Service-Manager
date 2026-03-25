@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function SignupPage() {
     const [email, setEmail] = useState('')
@@ -38,6 +39,7 @@ export default function SignupPage() {
                         <input
                             type="email"
                             required
+                            suppressHydrationWarning
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
@@ -49,6 +51,7 @@ export default function SignupPage() {
                         <input
                             type="text"
                             required
+                            suppressHydrationWarning
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                             value={nickname}
                             onChange={e => setNickname(e.target.value)}
@@ -60,6 +63,7 @@ export default function SignupPage() {
                         <input
                             type="password"
                             required
+                            suppressHydrationWarning
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
@@ -75,7 +79,7 @@ export default function SignupPage() {
                 </form>
 
                 <div className="mt-8 text-center text-sm text-gray-500 font-medium">
-                    이미 계정이 있으신가요? <a href="/login" className="text-blue-600 hover:text-blue-800 ml-1 transition-colors">로그인하기</a>
+                    이미 계정이 있으신가요? <Link href="/login" className="text-blue-600 hover:text-blue-800 ml-1 transition-colors">로그인하기</Link>
                 </div>
             </div>
         </div>

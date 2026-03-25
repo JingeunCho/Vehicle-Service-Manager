@@ -1,15 +1,15 @@
 package com.carledger.bot
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.autoconfigure.domain.EntityScan
+import org.springframework.boot.persistence.autoconfigure.EntityScan
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 
 @SpringBootApplication
 @ComponentScan(basePackages = ["com.carledger.core", "com.carledger.bot"])
-@EntityScan(basePackages = ["com.carledger.core.domain"])
-@EnableJpaRepositories(basePackages = ["com.carledger.core.repository"])
+@EntityScan(basePackages = ["com.carledger.core"])
+@EnableJpaRepositories(basePackages = ["com.carledger.core"])
 class CarLedgerBotApplication
 
 fun main(args: Array<String>) {

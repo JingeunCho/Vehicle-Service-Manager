@@ -43,21 +43,22 @@ class BotMessageProcessor(
             val ledger = ledgerService.createLedger(
                 email = member.email,
                 vehicleId = defaultVehicle.id,
-                categoryName = parsedMessage.category,
+                category = parsedMessage.category,
                 amount = parsedMessage.amount,
                 recordDate = LocalDate.now(),
                 memo = parsedMessage.memo ?: "",
-                mileage = parsedMessage.mileage
+                mileage = parsedMessage.mileage,
+                title = parsedMessage.title,
             )
 
             return "✅ 지출 기록 완료!\n" +
-                   "차량: \${defaultVehicle.name}\n" +
-                   "분류: \${ledger.category.name}\n" +
-                   "금액: \${ledger.amount}원" +
-                   (parsedMessage.mileage?.let { "\n누적 주행거리: \${it}km" } ?: "")
+                   "차량: ${defaultVehicle.name}\n" +
+                   "분류: ${ledger.category.name}\n" +
+                   "금액: ${ledger.amount}원" +
+                   (parsedMessage.mileage?.let { "\n누적 주행거리: ${it}km" } ?: "")
 
         } catch (e: Exception) {
-            return "❗️ 오류 발생: \${e.message}"
+            return "❗️ 오류 발생: ${e.message}"
         }
     }
 }

@@ -11,6 +11,8 @@ class JwtAuthenticationFilter(
     private val jwtTokenProvider: JwtTokenProvider
 ) : OncePerRequestFilter() {
 
+    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
+
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -18,9 +20,16 @@ class JwtAuthenticationFilter(
     ) {
         val token = resolveToken(request)
         
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            val authentication = jwtTokenProvider.getAuthentication(token)
-            SecurityContextHolder.getContext().authentication = authentication
+        try {
+            if (token != null && jwtTokenProvider.validateToken(token)) {
+                val authentication = jwtTokenProvider.getAuthentication(token)
+                SecurityContextHolder.getContext().authentication = authentication
+                log.debug("JWT authentication set for: {}", authentication.name)
+            } else if (token != null) {
+                log.warn("Invalid or Expired JWT token received")
+            }
+        } catch (e: Exception) {
+            log.error("Error during JWT authentication: {}", e.message, e)
         }
         
         filterChain.doFilter(request, response)
