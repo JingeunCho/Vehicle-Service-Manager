@@ -16,7 +16,7 @@ enum class LedgerCategory {
 }
 
 @Entity
-@Table(name = "ledger")
+@Table(name = "ledger", catalog = "vms")
 class Ledger(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

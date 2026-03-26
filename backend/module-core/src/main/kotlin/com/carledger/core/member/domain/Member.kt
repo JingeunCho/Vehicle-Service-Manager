@@ -4,7 +4,7 @@ import com.carledger.core.common.domain.BaseEntity
 import jakarta.persistence.*
 
 @Entity
-@Table(name = "member")
+@Table(name = "member", catalog = "vms")
 class Member(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

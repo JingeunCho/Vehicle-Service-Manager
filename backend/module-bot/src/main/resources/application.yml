@@ -4,9 +4,9 @@ spring:
   application:
     name: car-ledger-bot
   datasource:
-    url: jdbc:mariadb://localhost:3306/car_ledger?createDatabaseIfNotExist=true
+    url: jdbc:mariadb://localhost:3306/vms
     username: root
-    password: 
+    password: qwer123$
     driver-class-name: org.mariadb.jdbc.Driver
   liquibase:
     enabled: false
