@@ -18,4 +18,10 @@ interface LedgerRepository : JpaRepository<Ledger, Long>, LedgerRepositoryCustom
         ORDER BY l.recordDate DESC
     """)
     fun findMaintenanceRecordsByVehicleId(vehicleId: Long): List<Ledger>
+    @Query("""
+        SELECT MAX(l.mileageAtRecord) FROM Ledger l 
+        WHERE l.vehicle.id = :vehicleId 
+          AND l.isDeleted = false
+    """)
+    fun findMaxMileageByVehicleId(vehicleId: Long): Int?
 }

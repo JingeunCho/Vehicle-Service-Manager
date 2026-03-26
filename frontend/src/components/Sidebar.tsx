@@ -13,40 +13,16 @@ export default function Sidebar({ className = "" }: { className?: string }) {
 
     return (
         <aside className={`${className} flex flex-col p-4`}>
-            <div className="mb-8">
-                <h2 className="text-xl font-black text-blue-600 tracking-tight">Car Ledger</h2>
-            </div>
-
-            <div className="mb-6">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">차량 선택</h3>
-                <div className="space-y-1.5">
-                    {isLoading ? (
-                        <div className="px-4 py-3 text-sm text-gray-400 animate-pulse">차량 목록 로딩 중...</div>
-                    ) : vehicles && vehicles.length > 0 ? (
-                        vehicles.map((v) => (
-                            <button
-                                key={v.id}
-                                onClick={() => setSelectedVehicleId(v.id)}
-                                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm transition-all ${selectedVehicleId === v.id
-                                    ? 'bg-blue-50 text-blue-600 font-bold border border-blue-100 shadow-sm'
-                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
-                                    }`}
-                            >
-                                <span className="truncate">{v.name}</span>
-                                {v.isPrimary && (
-                                    <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">대표</span>
-                                )}
-                            </button>
-                        ))
-                    ) : (
-                        <div className="px-4 py-3 text-sm text-gray-400 italic">등록된 차량이 없습니다.</div>
-                    )}
-                </div>
+            <div className="mb-10 mt-2 px-1">
+                <h2 className="text-xl font-black text-blue-600 tracking-tight flex items-center gap-2">
+                    <span className="w-8 h-8 bg-blue-600 text-white flex items-center justify-center rounded-lg text-lg italic">C</span>
+                    Car Ledger
+                </h2>
             </div>
 
             <div className="mb-8">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">메뉴</h3>
-                <ul className="space-y-2">
+                <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 px-1 opacity-70">Main Menu</h3>
+                <ul className="space-y-1.5">
                     <li>
                         <Link href="/" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/'
                             ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 font-semibold'

@@ -41,7 +41,7 @@ class MessageParser {
         return when (categoryText) {
             "고급유", "일반유", "경유" -> LedgerCategory.REFUEL to categoryText
             "엔진오일", "미션오일", "브레이크", "하체" -> LedgerCategory.MAINTENANCE to categoryText
-            "세차" -> LedgerCategory.WASH to categoryText
+            "세차" -> LedgerCategory.CAR_SUPPLIES to categoryText
             "보험료", "자동차세" -> LedgerCategory.FIXED_COST to categoryText
             else -> LedgerCategory.ETC to categoryText
         }

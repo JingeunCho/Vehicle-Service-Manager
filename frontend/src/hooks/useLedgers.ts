@@ -12,7 +12,7 @@ export type MaintenanceType =
     | 'COOLANT'
     | 'OTHER';
 
-export type LedgerCategory = 'REFUEL' | 'MAINTENANCE' | 'WASH' | 'FIXED_COST' | 'ETC';
+export type LedgerCategory = 'REFUEL' | 'MAINTENANCE' | 'CAR_SUPPLIES' | 'FIXED_COST' | 'ETC';
 
 export interface Ledger {
     id: number;
@@ -28,15 +28,23 @@ export interface Ledger {
     maintenanceType?: MaintenanceType;
 }
 
-export const useLedgers = (vehicleId: number | null) => {
-    return useQuery<Ledger[]>({
-        queryKey: ['ledgers', vehicleId],
+export interface PageResponse<T> {
+    content: T[];
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    number: number; // 현재 페이지 번호 (0-based)
+}
+
+export const useLedgers = (vehicleId: number | null, page: number = 0, size: number = 10) => {
+    return useQuery<PageResponse<Ledger>>({
+        queryKey: ['ledgers', vehicleId, page, size],
         queryFn: async () => {
-            if (!vehicleId) return [];
-            const { data } = await api.get(`/ledgers/vehicles/${vehicleId}`);
+            if (vehicleId === null) return { content: [], totalPages: 0, totalElements: 0, size, number: 0 };
+            const { data } = await api.get(`/ledgers/vehicles/${vehicleId}?page=${page}&size=${size}`);
             return data;
         },
-        enabled: !!vehicleId,
+        enabled: vehicleId !== null,
     });
 };
 
@@ -50,6 +58,7 @@ export const useCreateLedger = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['ledgers'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
         },
     });
 };
@@ -64,6 +73,7 @@ export const useUpdateLedger = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['ledgers'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
         },
     });
 };
@@ -77,6 +87,7 @@ export const useDeleteLedger = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['ledgers'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
         },
     });
 };

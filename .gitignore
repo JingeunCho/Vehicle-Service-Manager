@@ -17,3 +17,6 @@ backend/logs/
 *.iml
 .DS_Store
 /tmp/
+/backend/module-core/build/
+/backend/module-web/build/
+/backend/module-bot/build/

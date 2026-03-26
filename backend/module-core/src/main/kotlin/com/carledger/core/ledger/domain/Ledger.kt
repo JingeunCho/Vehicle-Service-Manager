@@ -10,7 +10,7 @@ import java.time.LocalDate
 enum class LedgerCategory {
     REFUEL,       // 주유/충전
     MAINTENANCE,  // 정비/수리
-    WASH,         // 세차
+    CAR_SUPPLIES, // 차량 용품 구입
     FIXED_COST,   // 보험료, 세금 등 고정비
     ETC           // 기타
 }
@@ -60,7 +60,7 @@ class Ledger(
 
     /**
      * 소모품 교환 유형 (nullable)
-     * - null: 일반 차계부 기록 (연료비, 보험료, 세차 등)
+     * - null: 일반 차계부 기록 (연료비, 보험료, 차량 용품 구입 등)
      * - not null: 소모품 교환 기록 → 차량 마지막 정비 이력 추적에 활용
      * 
      * 예) 엔진오일 교환 시 amount=70000, maintenanceType=ENGINE_OIL

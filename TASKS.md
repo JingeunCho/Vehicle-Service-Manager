@@ -20,15 +20,17 @@
 
 ## 🚀 앞으로 진행할 핵심 마일스톤 (To-Do)
 
-### Phase 18: Full-Stack Integration Testing (가장 시급)
-- [ ] 프론트엔드의 `useAuth` 페이크 인증을 걷어내고 실제 Spring Security JWT 발급 연동
-- [ ] 내 차고 관리(Vehicle) 페이지 및 대표 차량 스위칭을 실제 DB 데이터 기반으로 렌더링 검증
-- [ ] 지출 내역(Ledger) CRUD를 실제 API와 연결하여 Dashboard 그래프 동기화 확인
+- [x] **Phase 18: Full-Stack Integration Testing** (JWT 인증 연동, 대시보드 통계 실데이터 연결, 차량 스위칭 검증)
 
-### Phase 19: Advanced Backend & Bot Features
-- [ ] 오피넷(Opinet) 오픈 API 유가 연동 알고리즘 작성
-- [ ] 지출 내역 조회 페이징(Pageable)을 위한 QueryDSL 고도화
-- [ ] 텔레그램 봇: 복수 차량 소유 유저를 위한 Inline Keyboard 응답 로직 추가
+## 🚀 앞으로 진행할 핵심 마일스톤 (To-Do)
+
+### Phase 19: Advanced Backend & Bot Features (현재 진행 중)
+- [x] **지출 내역 페이징 고도화**: QueryDSL을 활용한 `Pageable` 조회 및 프론트엔드 무한 스크롤/페이지네이션 UI 추가 (Ellipsis 및 이동 버튼 포함)
+- [ ] **Dynamic Enum 메타데이터 API**: 백엔드 Enum에 `categoryName` 필드를 추가하고 프론트엔드에서 필터 목록을 동적으로 받아오도록 리팩토링 (유지보수성 향상)
+- [ ] **유가 연동 알고리즘**: 오피넷(Opinet) 오픈 API 또는 크롤링을 통한 실시간 주유 단가 연동
+- [ ] **텔레그램 봇 고도화**: 복수 차량 소유 유저를 위한 Inline Keyboard 응답 로직 및 간편 기록 기능 추가
+- [ ] **통계 엔진 강화**: 월간 리포트 생성 및 전월 대비 지출 변화 분석 로직 추가
+
 
 ### Phase 20: DevOps & Deployment
 - [ ] Backend (`module-web`, `module-bot`) 및 Frontend Dockerfile 작성

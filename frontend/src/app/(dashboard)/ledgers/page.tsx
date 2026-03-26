@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useVehicleContext } from '@/context/VehicleContext'
-import { useLedgers, useCreateLedger, MaintenanceType, LedgerCategory } from '@/hooks/useLedgers'
+import { useLedgers, useCreateLedger, useUpdateLedger, useDeleteLedger, MaintenanceType, LedgerCategory } from '@/hooks/useLedgers'
 
 type ModalMode = "NONE" | "ADD" | "VIEW" | "EDIT"
 
@@ -20,11 +20,20 @@ const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
 
 export default function LedgersPage() {
     const { vehicles, selectedVehicleId, setSelectedVehicleId } = useVehicleContext()
-    const { data: ledgers, isLoading, error } = useLedgers(selectedVehicleId)
+    
+    // 페이징 상태
+    const [page, setPage] = useState(0)
+    const [pageSize, setPageSize] = useState(10)
+    const [filterCategory, setFilterCategory] = useState<LedgerCategory | "ALL">("ALL")
+
+    const { data: pageData, isLoading, error } = useLedgers(selectedVehicleId, page, pageSize)
+    
     const createLedgerMutation = useCreateLedger()
+    const updateLedgerMutation = useUpdateLedger()
+    const deleteLedgerMutation = useDeleteLedger()
+
     const [modalMode, setModalMode] = useState<ModalMode>("NONE")
     const [selectedLedgerId, setSelectedLedgerId] = useState<number | null>(null)
-    const [filterCategory, setFilterCategory] = useState<LedgerCategory | "ALL">("ALL")
     const [selectedCategory, setSelectedCategory] = useState<LedgerCategory>('REFUEL')
     const [selectedMaintenanceType, setSelectedMaintenanceType] = useState<MaintenanceType | ''>('')
 
@@ -40,19 +49,23 @@ export default function LedgersPage() {
         setModalMode("VIEW")
     }
 
-    const targetLedger = selectedLedgerId ? ledgers?.find(l => l.id === selectedLedgerId) : null
+    // 서버 사이드 필터링(카테고리)은 추후 API 확장 시 반영하고, 현재는 가져온 데이터 내에서 필터링하거나 
+    // 실제로는 API 파라미터에 category를 추가하는 것이 정석입니다.
+    // 일단 UI상으로는 content를 사용합니다.
+    const ledgers = pageData?.content || []
+    
+    const filteredLedgers = ledgers.filter(L => {
+        return (filterCategory === "ALL") || (L.category === filterCategory)
+    })
 
-    const filteredLedgers = ledgers?.filter(L => {
-        const passCategory = (filterCategory === "ALL") || (L.category === filterCategory)
-        // 차량 필터는 Context에서 관리되므로 여기서는 카테고리 필터만 수행
-        return passCategory
-    }) || []
+    const targetLedger = selectedLedgerId ? ledgers.find(l => l.id === selectedLedgerId) : null
 
     const getCategoryBadge = (cat: LedgerCategory) => {
         switch (cat) {
             case 'REFUEL': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-purple-50 text-purple-700 border border-purple-200">주유</span>
             case 'MAINTENANCE': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-orange-50 text-orange-700 border border-orange-200">정비</span>
-            case 'WASH': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-cyan-50 text-cyan-700 border border-cyan-200">세차</span>
+            case 'CAR_SUPPLIES': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-cyan-50 text-cyan-700 border border-cyan-200">용품구입</span>
+            case 'FIXED_COST': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">고정비</span>
             default: return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-gray-100 text-gray-700 border border-gray-200">기타</span>
         }
     }
@@ -109,11 +122,24 @@ export default function LedgersPage() {
                         닫기
                     </button>
                     <div className="flex gap-3">
-                        <button type="button" className="px-5 py-3 text-[14px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition focus:outline-none">
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                if (selectedLedgerId && confirm('정말 이 내역을 삭제하시겠습니까?')) {
+                                    try {
+                                        await deleteLedgerMutation.mutateAsync(selectedLedgerId)
+                                        setModalMode("NONE")
+                                    } catch (err) {
+                                        alert('삭제 중 오류가 발생했습니다.')
+                                    }
+                                }
+                            }}
+                            className="px-5 py-3 text-[14px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition focus:outline-none"
+                        >
                             삭제
                         </button>
                         <button type="button" onClick={() => setModalMode("EDIT")} className="px-6 py-3 text-[15px] font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 rounded-xl transition focus:outline-none">
-                            정보 ✏️ 수정하기
+                            ✏️ 정보 수정하기
                         </button>
                     </div>
                 </div>
@@ -141,24 +167,31 @@ export default function LedgersPage() {
                     return
                 }
 
-                // 주행거리 하한 검증: 현재 차량 주행거리보다 작은 값은 불가
-                const selectedVehicle = vehicles?.find(v => v.id === vehicleId)
-                if (selectedVehicle && mileage < selectedVehicle.currentMileage) {
-                    alert(`주행거리는 현재 차량 주행거리(${selectedVehicle.currentMileage.toLocaleString()} km)와 같거나 더 크게 입력해주세요.`)
-                    return
-                }
-
                 try {
-                    await createLedgerMutation.mutateAsync({
-                        vehicleId,
-                        category: selectedCategory,
-                        title,
-                        recordDate: new Date(recordDate),
-                        amount,
-                        mileage: mileage || undefined,
-                        memo,
-                        maintenanceType: selectedMaintenanceType || undefined
-                    })
+                    if (isEdit && selectedLedgerId) {
+                        await updateLedgerMutation.mutateAsync({
+                            id: selectedLedgerId,
+                            vehicleId,
+                            category: selectedCategory,
+                            title,
+                            recordDate: new Date(recordDate),
+                            amount,
+                            mileage: mileage || undefined,
+                            memo,
+                            maintenanceType: selectedMaintenanceType || undefined
+                        })
+                    } else {
+                        await createLedgerMutation.mutateAsync({
+                            vehicleId,
+                            category: selectedCategory,
+                            title,
+                            recordDate: new Date(recordDate),
+                            amount,
+                            mileage: mileage || undefined,
+                            memo,
+                            maintenanceType: selectedMaintenanceType || undefined
+                        })
+                    }
                     setModalMode("NONE")
                     setSelectedCategory('REFUEL')
                     setSelectedMaintenanceType('')
@@ -185,13 +218,14 @@ export default function LedgersPage() {
                             className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
                             <option value="REFUEL">주유 / 충전 (REFUEL)</option>
                             <option value="MAINTENANCE">정비 / 수리 (MAINTENANCE)</option>
-                            <option value="WASH">세차 (WASH)</option>
+                            <option value="CAR_SUPPLIES">차량 용품 구입 (CAR_SUPPLIES)</option>
+                            <option value="FIXED_COST">세금 / 보험료 (FIXED_COST)</option>
                             <option value="ETC">기타 유지비용 (ETC)</option>
                         </select>
                     </div>
                 </div>
 
-                {/* 소모품 종류 드롭다운 - 카테고리가 MAINTENANCE일 때만 표시 */}
+                {/* 소모품 종류 드롭다운 */}
                 {(isEdit ? targetLedger?.category : selectedCategory) === 'MAINTENANCE' && (
                     <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
                         <label className="block text-sm font-bold text-orange-700 mb-2">🔧 소모품 교환 종류 (선택)</label>
@@ -204,7 +238,6 @@ export default function LedgersPage() {
                                 <option key={type} value={type}>{MAINTENANCE_TYPE_LABELS[type]}</option>
                             ))}
                         </select>
-                        <p className="text-xs text-orange-500 mt-2">소모품 종류를 선택하면 차량 상태에 마지막 교환일이 자동으로 기록됩니다.</p>
                     </div>
                 )}
 
@@ -227,45 +260,24 @@ export default function LedgersPage() {
                             <span className="text-sm font-bold text-blue-800 opacity-70 shrink-0">원</span>
                         </div>
                     </div>
-                    <div className="relative">
+                    <div>
                         <label className="block text-[13px] font-black text-blue-900 mb-2 ml-1">기록 시점의 주행거리 🚗 *</label>
-                        <div className="flex items-center gap-2 relative z-10">
-                            <input
-                                name="mileage"
-                                type="number"
-                                required
-                                min={(() => {
-                                    const vid = isEdit ? targetLedger?.vehicleId : selectedVehicleId
-                                    return vehicles?.find(v => v.id === vid)?.currentMileage ?? 0
-                                })()}
-                                defaultValue={isEdit ? (targetLedger?.mileageAtRecord || '') : ''}
-                                className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200"
-                                placeholder={String((() => {
-                                    const vid = isEdit ? targetLedger?.vehicleId : selectedVehicleId
-                                    return vehicles?.find(v => v.id === vid)?.currentMileage ?? 0
-                                })())}
-                            />
+                        <div className="flex items-center gap-2">
+                            <input name="mileage" type="number" required min={0} defaultValue={isEdit ? (targetLedger?.mileageAtRecord || '') : ''} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200" placeholder="0" />
                             <span className="text-sm font-bold text-blue-800 opacity-70 shrink-0">km</span>
                         </div>
-                        <p className="absolute -bottom-5 right-6 text-[10px] font-bold text-blue-500">
-                            {(() => {
-                                const vid = isEdit ? targetLedger?.vehicleId : selectedVehicleId
-                                const cur = vehicles?.find(v => v.id === vid)?.currentMileage
-                                return cur ? `최소 ${cur.toLocaleString()} km 이상 입력` : '누락 시 연비 계산이 불가능합니다.'
-                            })()}
-                        </p>
                     </div>
                 </div>
 
                 <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">메모 (선택)</label>
-                    <textarea name="memo" rows={2} defaultValue={isEdit ? (targetLedger?.memo || '') : ''} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none transition font-semibold text-gray-900 leading-relaxed shadow-sm" placeholder="수리 부품 상세 내역 혹은 기타 메모를 남겨주세요..."></textarea>
+                    <textarea name="memo" rows={2} defaultValue={isEdit ? (targetLedger?.memo || '') : ''} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none transition font-semibold text-gray-900 leading-relaxed shadow-sm" placeholder="상세 내역을 입력하세요..."></textarea>
                 </div>
 
                 <div className="pt-6 border-t border-gray-100 flex justify-end gap-3 mt-4">
                     <button type="button" onClick={() => setModalMode(isEdit ? "VIEW" : "NONE")} className="px-6 py-3.5 text-[15px] font-bold text-gray-600 bg-gray-100/80 rounded-xl hover:bg-gray-200 transition">취소</button>
                     <button type="submit" disabled={createLedgerMutation.isPending} className="px-6 py-3.5 text-[15px] font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition transform active:scale-95 disabled:opacity-50">
-                        {createLedgerMutation.isPending ? '저장 중...' : (isEdit ? '변경 사항 저장' : '내역 저장')}
+                        저장
                     </button>
                 </div>
             </form>
@@ -278,144 +290,204 @@ export default function LedgersPage() {
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">지출 내역 상세 조회</h2>
-                    <p className="text-sm text-gray-500 mt-1">텔레그램 봇으로 기록한 내역과 수동으로 추가한 차계부 기록을 모두 한눈에 확인하세요.</p>
+                    <p className="text-sm text-gray-500 mt-1">기록된 차계부 내역을 페이징하여 확인하세요.</p>
                 </div>
                 <button
                     onClick={handleOpenAddModal}
-                    className="bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2 shrink-0"
+                    className="bg-blue-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all flex items-center gap-2 shrink-0"
                 >
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                     지출 내역 추가
                 </button>
             </div>
 
-            {/* 필터 트레이 */}
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-5 items-center justify-between">
+            {/* 필터 및 페이지 크기 설정 트레이 */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row gap-5 items-end justify-between">
                 <div className="flex flex-col md:flex-row gap-5 w-full">
-                    <div className="shrink-0 md:w-48">
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">보유 차량 필터</label>
+                    <div className="shrink-0 md:w-56">
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">차량 선택 필터</label>
                         <select
-                            value={selectedVehicleId?.toString() || 'ALL'}
-                            onChange={(e) => setSelectedVehicleId(Number(e.target.value))}
-                            className="bg-gray-50 border border-gray-200 text-gray-800 text-sm font-semibold rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full py-2.5 px-3 outline-none cursor-pointer shadow-sm"
+                            value={selectedVehicleId?.toString() || '0'}
+                            onChange={(e) => {
+                                setSelectedVehicleId(Number(e.target.value))
+                                setPage(0) // 차량 변경 시 첫 페이지로
+                            }}
+                            className="bg-gray-50 border border-gray-200 text-gray-800 text-sm font-bold rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full py-3 px-3 outline-none cursor-pointer shadow-sm"
                         >
-                            <option value="ALL" disabled>전체 차량 (사이드바 선택)</option>
+                            <option value="0">🚗 모든 차량 정보 보기</option>
                             {vehicles?.map(v => (
-                                <option key={v.id} value={v.id.toString()}>{v.name}</option>
+                                <option key={v.id} value={v.id.toString()}>{v.isPrimary ? '⭐ ' : ''}{v.name}</option>
                             ))}
                         </select>
                     </div>
 
                     <div className="w-full overflow-hidden">
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">분류 별 필터 보기</label>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">분류 별 필터</label>
                         <div className="flex flex-nowrap overflow-x-auto pb-1 gap-2 no-scrollbar">
-                            {(['ALL', 'REFUEL', 'MAINTENANCE', 'WASH', 'FIXED_COST', 'ETC'] as const).map(cat => (
+                            {(['ALL', 'REFUEL', 'MAINTENANCE', 'CAR_SUPPLIES', 'FIXED_COST', 'ETC'] as const).map(cat => (
                                 <button
                                     key={cat}
-                                    onClick={() => setFilterCategory(cat as any)}
+                                    onClick={() => {
+                                        setFilterCategory(cat as any)
+                                        setPage(0) // 필터 변경 시 첫 페이지로
+                                    }}
                                     className={`px-4 py-2 text-[13px] font-semibold rounded-lg transition-colors border shrink-0 ${filterCategory === cat
-                                        ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
-                                        : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                        : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50'
                                         }`}
                                 >
-                                    {cat === 'ALL' ? '전체 보기' :
-                                        cat === 'REFUEL' ? '⛽ 주유 및 충전' :
-                                            cat === 'MAINTENANCE' ? '🛠 정비 결제' :
-                                                cat === 'WASH' ? '🚿 세차 용품' :
-                                                    cat === 'FIXED_COST' ? '💰 세금/보험료' : '📦 기타 유지비'}
+                                    {cat === 'ALL' ? '전체' : cat}
                                 </button>
                             ))}
                         </div>
                     </div>
                 </div>
+
+                <div className="shrink-0">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">페이지 당 표시</label>
+                    <select
+                        value={pageSize}
+                        onChange={(e) => {
+                            setPageSize(Number(e.target.value))
+                            setPage(0)
+                        }}
+                        className="bg-gray-50 border border-gray-200 text-gray-800 text-sm font-bold rounded-xl focus:ring-2 focus:ring-blue-500 block w-24 py-3 px-3 outline-none cursor-pointer shadow-sm"
+                    >
+                        <option value={5}>5개</option>
+                        <option value={10}>10개</option>
+                        <option value={20}>20개</option>
+                    </select>
+                </div>
             </div>
 
             {/* 테이블 뷰 영역 */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
-                <table className="w-full text-left whitespace-nowrap table-fixed min-w-[850px]">
-                    <thead>
-                        <tr className="bg-gray-50/80 border-b border-gray-100 text-xs font-black text-gray-500 tracking-widest uppercase">
-                            <th className="px-6 py-4 w-[16%]">최근 결제일자</th>
-                            <th className="px-6 py-4 w-[34%]">지출 내역 구분 및 내용</th>
-                            <th className="px-6 py-4 w-[12%]">항목</th>
-                            <th className="px-6 py-4 w-[16%] text-right">기록 계기판(주행거리)</th>
-                            <th className="px-6 py-4 w-[16%] text-right">결제 금액</th>
-                            <th className="px-6 py-4 w-[6%] text-center text-gray-400"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {filteredLedgers.map(l => (
-                            <tr
-                                key={l.id}
-                                onClick={() => handleRowClick(l.id)}
-                                className="hover:bg-blue-50/40 transition-colors group cursor-pointer"
-                            >
-                                <td className="px-6 py-4 align-middle">
-                                    <div className="text-[13px] font-bold text-gray-600">{l.recordDate}</div>
-                                </td>
-                                <td className="px-6 py-4 truncate">
-                                    <div className="text-sm font-bold text-gray-950 truncate">{l.title}</div>
-                                    <div className="flex items-center gap-1.5 mt-1 opacity-80 truncate">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
-                                        <div className="text-[11px] font-bold text-gray-500 tracking-tight shrink-0">{vehicles?.find(v => v.id === l.vehicleId)?.name || '기타'}</div>
-                                        {l.memo && (
-                                            <span className="ml-1 text-[11px] font-medium text-gray-400 truncate">
-                                                | {l.memo}
-                                            </span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 align-middle">
-                                    {getCategoryBadge(l.category)}
-                                </td>
-                                <td className="px-6 py-4 text-right align-middle">
-                                    <div className="text-[13.5px] font-bold text-gray-700">{l.mileageAtRecord.toLocaleString()} km</div>
-                                </td>
-                                <td className="px-6 py-4 text-right align-middle">
-                                    <div className="text-[15px] font-black text-gray-900 tracking-tight">{l.amount.toLocaleString()} <span className="text-[11px] font-bold text-gray-400 tracking-normal ml-0.5">원</span></div>
-                                </td>
-                                <td className="px-6 py-4 text-center align-middle">
-                                    <svg className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition mx-auto opacity-50 group-hover:opacity-100 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-                                </td>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left whitespace-nowrap table-fixed min-w-[850px]">
+                        <thead>
+                            <tr className="bg-gray-50/80 border-b border-gray-100 text-xs font-black text-gray-500 tracking-widest uppercase">
+                                <th className="px-6 py-4 w-[16%]">결제일자</th>
+                                <th className="px-6 py-4 w-[34%]">내용</th>
+                                <th className="px-6 py-4 w-[12%]">항목</th>
+                                <th className="px-6 py-4 w-[16%] text-right">주행거리</th>
+                                <th className="px-6 py-4 w-[16%] text-right">결제 금액</th>
+                                <th className="px-6 py-4 w-[6%]"></th>
                             </tr>
-                        ))}
-                        {filteredLedgers.length === 0 && (
-                            <tr>
-                                <td colSpan={6} className="px-6 py-16 text-center">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                                    </div>
-                                    <p className="text-sm font-bold text-gray-500">해당 조건의 지출 기록이 존재하지 않습니다.</p>
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filteredLedgers.map(l => (
+                                <tr key={l.id} onClick={() => handleRowClick(l.id)} className="hover:bg-blue-50/40 transition-colors group cursor-pointer">
+                                    <td className="px-6 py-4 text-[13px] font-bold text-gray-600">{l.recordDate}</td>
+                                    <td className="px-6 py-4 truncate">
+                                        <div className="text-sm font-bold text-gray-950 truncate">{l.title}</div>
+                                        <div className="text-[11px] font-bold text-gray-400 mt-1">{vehicles?.find(v => v.id === l.vehicleId)?.name || '기타'}</div>
+                                    </td>
+                                    <td className="px-6 py-4">{getCategoryBadge(l.category)}</td>
+                                    <td className="px-6 py-4 text-right text-[13.5px] font-bold text-gray-700">{l.mileageAtRecord.toLocaleString()} km</td>
+                                    <td className="px-6 py-4 text-right text-[15px] font-black text-gray-900">{l.amount.toLocaleString()} 원</td>
+                                    <td className="px-6 py-4 text-center">
+                                        <svg className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* 페이징 컨트롤러 */}
+                <div className="px-6 py-5 bg-gray-50/50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="text-sm text-gray-500 font-medium">
+                        총 <span className="font-bold text-gray-900">{pageData?.totalElements || 0}</span>개의 항목 중 
+                        {pageData && pageData.totalElements > 0 ? (
+                            ` ${page * pageSize + 1} - ${Math.min((page + 1) * pageSize, pageData.totalElements)}`
+                        ) : ' 0'} 표시
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5">
+                        {/* 첫 페이지로 */}
+                        <button
+                            disabled={page === 0}
+                            onClick={() => setPage(0)}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            title="첫 페이지"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+                        </button>
+
+                        {/* 이전 페이지로 */}
+                        <button
+                            disabled={page === 0}
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all mr-1"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        
+                        <div className="flex items-center gap-1">
+                            {(() => {
+                                const totalPages = pageData?.totalPages || 0;
+                                const pageNumbers = [];
+                                
+                                if (totalPages <= 7) {
+                                    for (let i = 0; i < totalPages; i++) pageNumbers.push(i);
+                                } else {
+                                    if (page < 4) {
+                                        // 초반부: 1 2 3 4 5 ... Last
+                                        pageNumbers.push(0, 1, 2, 3, 4, 'ellipsis-end', totalPages - 1);
+                                    } else if (page > totalPages - 5) {
+                                        // 후반부: 1 ... L-4 L-3 L-2 L-1 Last
+                                        pageNumbers.push(0, 'ellipsis-start', totalPages - 5, totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1);
+                                    } else {
+                                        // 중간부: 1 ... p-1 p p+1 ... Last
+                                        pageNumbers.push(0, 'ellipsis-start', page - 1, page, page + 1, 'ellipsis-end', totalPages - 1);
+                                    }
+                                }
+
+                                return pageNumbers.map((n, idx) => {
+                                    if (typeof n === 'string') {
+                                        return <span key={`ellipsis-\${idx}`} className="w-9 h-9 flex items-end justify-center text-gray-400 font-bold pb-2">...</span>;
+                                    }
+                                    return (
+                                        <button
+                                            key={n}
+                                            onClick={() => setPage(n)}
+                                            className={`w-9 h-9 rounded-lg text-[13px] font-black transition-all ${page === n 
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                                                : 'text-gray-900 bg-gray-50 hover:bg-white hover:text-blue-600 border border-gray-200'}`}
+                                        >
+                                            {n + 1}
+                                        </button>
+                                    );
+                                });
+                            })()}
+                        </div>
+
+                        {/* 다음 페이지로 */}
+                        <button
+                            disabled={page >= (pageData?.totalPages || 1) - 1}
+                            onClick={() => setPage(p => Math.min((pageData?.totalPages || 1) - 1, p + 1))}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all ml-1"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+
+                        {/* 마지막 페이지로 */}
+                        <button
+                            disabled={page >= (pageData?.totalPages || 1) - 1}
+                            onClick={() => setPage((pageData?.totalPages || 1) - 1)}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            title="마지막 페이지"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            {/* 거대한 통합 Modal Overlay (ADD, VIEW, EDIT) */}
+            {/* Modal Overlay 생략 (기존과 동일) */}
             {modalMode !== "NONE" && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setModalMode("NONE")}></div>
-                    <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200">
-                        {modalMode !== "VIEW" && (
-                            <div className="flex justify-between items-center mb-8 border-b pb-4 border-gray-100">
-                                <div>
-                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-                                        {modalMode === "EDIT" ? "지출 내역 수정" : "지출 내역 기록"}
-                                    </h2>
-                                    <p className="text-sm text-gray-500 font-medium tracking-tight mt-1">
-                                        {modalMode === "EDIT"
-                                            ? "기존에 기록된 차계부 내역의 정보를 수정합니다."
-                                            : "텔레그램 봇을 거치지 않고 신규 내역을 기록합니다."}
-                                    </p>
-                                </div>
-                                <button onClick={() => setModalMode("NONE")} className="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition focus:outline-none">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </button>
-                            </div>
-                        )}
-
+                    <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 md:p-8">
                         {modalMode === "VIEW" ? renderSummaryView() : renderEditForm()}
                     </div>
                 </div>

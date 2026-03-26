@@ -142,10 +142,21 @@
 
     <!-- 6) Category 엔터티 → Enum 리팩토링 -->
     <changeSet id="1.0.1-6" author="antigravity">
-        <!-- 기존 category_id 외래키 및 컬럼 제거 -->
+        <!-- 기존 category_id 외래키 제거 (존재할 때만 실행) -->
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists foreignKeyTableName="ledger" foreignKeyName="fk_ledger_category"/>
+        </preConditions>
         <dropForeignKeyConstraint baseTableName="ledger" constraintName="fk_ledger_category"/>
+    </changeSet>
+
+    <changeSet id="1.0.1-7" author="antigravity">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="ledger" columnName="category_id"/>
+        </preConditions>
         <dropColumn tableName="ledger" columnName="category_id"/>
-        
+    </changeSet>
+
+    <changeSet id="1.0.1-8" author="antigravity">
         <!-- 새로운 Enum 기반 category 및 title 컬럼 추가 -->
         <addColumn tableName="ledger">
             <column name="category" type="VARCHAR(50)">
@@ -155,8 +166,13 @@
                 <constraints nullable="false"/>
             </column>
         </addColumn>
-        
-        <!-- 더 이상 필요 없는 category 테이블 삭제 -->
+    </changeSet>
+
+    <changeSet id="1.0.1-9" author="antigravity">
+        <!-- 더 이상 필요 없는 category 테이블 삭제 (존재할 때만 실행) -->
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="category"/>
+        </preConditions>
         <dropTable tableName="category"/>
     </changeSet>
 

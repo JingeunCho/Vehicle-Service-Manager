@@ -26,9 +26,10 @@ export const useDashboard = (vehicleId: number | null) => {
     return useQuery<DashboardData>({
         queryKey: ['dashboard', vehicleId],
         queryFn: async () => {
-            const { data } = await api.get(`/ledgers/vehicles/\${vehicleId}/dashboard`);
+            if (vehicleId === null) throw new Error('No vehicle selected');
+            const { data } = await api.get(`/ledgers/vehicles/${vehicleId}/dashboard`);
             return data;
         },
-        enabled: !!vehicleId, // vehicleId가 있을 때만 쿼리 실행
+        enabled: vehicleId !== null, // 0(전체 차량)도 유효한 값으로 처리
     });
 };

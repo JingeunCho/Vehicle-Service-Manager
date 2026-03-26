@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useVehicles, Vehicle } from '@/hooks/useVehicles';
 
 interface VehicleContextType {
-    selectedVehicleId: number | null;
+    selectedVehicleId: number | null; // 0 is 'ALL'
     setSelectedVehicleId: (id: number) => void;
     vehicles: Vehicle[] | undefined;
     isLoading: boolean;
@@ -17,8 +17,8 @@ export const VehicleProvider = ({ children }: { children: ReactNode }) => {
     const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
 
     useEffect(() => {
+        // 초기 로드 시 차량이 있고 아직 선택된 차량이 없다면 대표 차량 선택
         if (vehicles && vehicles.length > 0 && selectedVehicleId === null) {
-            // 기본적으로 대표 차량(isPrimary)을 선택하거나 첫 번째 차량 선택
             const primary = vehicles.find(v => v.isPrimary) || vehicles[0];
             setSelectedVehicleId(primary.id);
         }

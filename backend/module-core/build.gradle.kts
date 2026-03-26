@@ -14,9 +14,16 @@ dependencies {
     "kapt"("io.github.openfeign.querydsl:querydsl-apt:7.1:jakarta")
     "kapt"("jakarta.persistence:jakarta.persistence-api:3.1.0")
     "kapt"("jakarta.annotation:jakarta.annotation-api:2.1.1")
-
 }
 
+kotlin {
+    jvmToolchain(21)
+    sourceSets {
+        main {
+            kotlin.srcDir("build/generated/source/kapt/main")
+        }
+    }
+}
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile> {
     compilerOptions {

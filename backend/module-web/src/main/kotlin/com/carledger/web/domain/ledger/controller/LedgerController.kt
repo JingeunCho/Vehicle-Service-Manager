@@ -20,9 +20,13 @@ class LedgerController(
 ) {
 
     @GetMapping("/vehicles/{vehicleId}")
-    fun getLedgers(@PathVariable vehicleId: Long, authentication: Authentication?): ResponseEntity<List<LedgerResponse>> {
+    fun getLedgers(
+        @PathVariable vehicleId: Long,
+        @org.springframework.data.web.PageableDefault(size = 10) pageable: org.springframework.data.domain.Pageable,
+        authentication: Authentication?
+    ): ResponseEntity<org.springframework.data.domain.Page<LedgerResponse>> {
         val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
-        val ledgers = ledgerService.getLedgersByVehicle(vehicleId, email)
+        val ledgers = ledgerService.getLedgersByVehicle(vehicleId, email, pageable)
         return ResponseEntity.ok(ledgers.map { LedgerResponse.of(it) })
     }
 
