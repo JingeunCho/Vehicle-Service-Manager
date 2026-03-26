@@ -6,7 +6,7 @@ import jakarta.persistence.*
 import java.time.Instant
 
 @Entity
-@Table(name = "vehicle")
+@Table(name = "vehicle", catalog = "car_ledger")
 class Vehicle(
 
     @Id

@@ -14,7 +14,7 @@ import jakarta.persistence.*
  * ※ orphanRemoval을 사용하지 않으므로 FK 변경 시 이전 row가 삭제되지 않음
  */
 @Entity
-@Table(name = "vehicle_spec")
+@Table(name = "vehicle_spec", catalog = "car_ledger")
 class VehicleSpec(
 
     @Id

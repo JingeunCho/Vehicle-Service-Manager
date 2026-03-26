@@ -16,6 +16,7 @@ backend/logs/
 .idea/
 *.iml
 .DS_Store
+.env
 /tmp/
 /backend/module-core/build/
 /backend/module-web/build/

@@ -1,157 +1,144 @@
 # 🚗 Vehicle Service Manager (Car Ledger)
 
-차량 관리 및 차계부(지출 내역) 통합 관리 시스템. 텔레그램 봇 연동, 소모품 이력 자동 추적, 차량 제원 관리 기능을 제공합니다.
+차량 제원 관리, 정비 이력 추적, 그리고 텔레그램 봇 연동을 통한 스마트 차계부 시스템입니다. 
+본 프로젝트는 효율적인 차량 유지보수와 지출 관리를 목표로 합니다.
 
 ---
 
-## 🏗️ 기술 스택
+## 🛠️ 기술 스택 (Tech Stack)
 
-| 항목 | 기술 |
-|------|------|
-| 백엔드 | Spring Boot 3.5.x + JDK 21 + Kotlin |
-| DB | MariaDB + Liquibase (마이그레이션 관리) |
-| ORM | Spring Data JPA + QueryDSL 7.1 |
-| 인증 | Spring Security + JWT |
-| 프론트엔드 | Next.js (App Router) + TypeScript + TailwindCSS |
-| 상태관리 | TanStack Query (React Query) |
-| 빌드 | Gradle 멀티모듈 |
-| 봇 | Telegram Bot API (module-bot) |
+### Backend (Multi-Module)
+- **Framework**: Spring Boot 4.0.4, Kotlin 2.2.0 (JDK 21)
+- **Data Access**: Spring Data JPA, QueryDSL 7.1 (Jakarta EE)
+- **Database**: MariaDB 11.x, Liquibase (Database Migration)
+- **Security**: Spring Security, JWT (jjwt 0.12.5)
+- **Build Tool**: Gradle (Kotlin DSL)
+
+### Frontend
+- **Framework**: Next.js 16.2.1 (App Router)
+- **Styling**: Tailwind CSS, Lucide React (Icons)
+- **State/Data**: React-Query (@tanstack/react-query 5.95.2), Axios
+- **Visualization**: Recharts (Dashboard statistics)
+
+### Infrastructure
+- **Container**: Docker, Docker Compose
+- **Proxy**: Nginx
 
 ---
 
-## 📁 프로젝트 구조
+## 📁 프로젝트 구조 (Project Structure)
 
-```
+```text
 Vehicle-Service-Manager/
 ├── backend/
-│   ├── module-core/          # 도메인 엔터티, 리포지토리, 서비스
+│   ├── module-core/                # 핵심 도메인 및 데이터 접근 계층
 │   │   └── src/main/kotlin/com/carledger/core/
-│   │       ├── vehicle/domain/   # Vehicle, VehicleSpec, WheelSpec, TireSpec, MaintenanceType
-│   │       ├── ledger/domain/    # Ledger (maintenanceType 필드 포함)
-│   │       ├── member/domain/    # Member
-│   │       ├── category/domain/  # Category
-│   │       └── common/domain/    # BaseEntity
-│   ├── module-web/           # REST API, Spring Security, DTO
-│   │   └── src/main/
-│   │       ├── kotlin/.../vehicle/   # VehicleController, VehicleRequest, VehicleResponse
-│   │       ├── kotlin/.../ledger/    # LedgerController, LedgerRequest, LedgerResponse
-│   │       └── resources/db/
-│   │           ├── changelog-1.0.0.xml  # 초기 스키마
-│   │           └── changelog-1.0.1.xml  # 정규화 마이그레이션
-│   └── module-bot/           # 텔레그램 봇 리스너 & 파서
-├── frontend/
+│   │       ├── vehicle/domain/     # 차량, 제원(Spec), 타이어/휠 엔티티
+│   │       ├── ledger/domain/      # 차계부 엔티티 및 정비 타입 정의
+│   │       ├── member/domain/      # 사용자 및 설정 엔티티
+│   │       └── common/             # JPA Auditing, QueryDSL 공통 설정
+│   ├── module-web/                 # 사용자 API 및 보안 계층
+│   │   ├── src/main/kotlin/com/carledger/web/
+│   │   │   ├── common/security/    # JWT 필터, 인증 프로바이더
+│   │   │   └── domain/             # 각 도메인별 Controller, Service, DTO
+│   │   └── src/main/resources/db/  # Liquibase 마이그레이션 (changelog-master.xml)
+│   └── module-bot/                 # 외부 봇 인터페이스 계층
+│       └── src/main/kotlin/com/carledger/bot/
+│           ├── telegram/           # 텔레그램 봇 API 클라이언트
+│           ├── parser/             # 메시지 정규식 파싱 및 명령 처리
+│           └── service/            # 봇 전용 비즈니스 로직
+├── frontend/                       # Next.js 프론트엔드 프로젝트
 │   └── src/
-│       ├── app/(dashboard)/
-│       │   ├── vehicles/page.tsx   # 차량 관리 UI
-│       │   └── ledgers/page.tsx    # 차계부 등록/조회 UI
-│       └── hooks/
-│           ├── useVehicles.ts      # 차량 API 훅 + 타입 정의
-│           └── useLedgers.ts       # 차계부 API 훅 + MaintenanceType 타입
-└── README.md
+│       ├── app/                    # App Router 기반 페이지 ((auth), (dashboard))
+│       ├── components/             # 재사용 가능한 UI 컴포넌트
+│       ├── hooks/                  # API 연동을 위한 Custom Hooks
+│       ├── context/                # 전역 상태 관리 Context API
+│       └── lib/                    # Axios 인스턴스 및 공통 유틸리티
+└── infra/                          # 인프라 설정 및 도커 구성
+    ├── nginx/                      # Nginx 설정 (default.conf)
+    ├── docker-compose.yml          # MariaDB, Nginx 컨테이너 설정
+    └── .env                        # 인프라 환경 변수 관리 (Git 무시)
 ```
 
 ---
 
-## 🗄️ 데이터베이스 스키마 (핵심 테이블)
+## 🚀 시작하기 (Getting Started)
 
-### 정규화 구조 (`changelog-1.0.1.xml` 적용 후)
-
-```
-vehicle
-  ├── vehicle_spec (1:1) ─→ front_wheel_id → wheel_spec
-  │                      ─→ rear_wheel_id  → wheel_spec
-  │                      ─→ front_tire_id  → tire_spec
-  │                      └─ rear_tire_id   → tire_spec
-  └── ledger (1:N)
-        └─ maintenance_type VARCHAR(50) NULL
-           (ENGINE_OIL | TRANSMISSION_OIL | DIFFERENTIAL_OIL |
-            FRONT_BRAKE_PAD | REAR_BRAKE_PAD |
-            FRONT_BRAKE_ROTOR | REAR_BRAKE_ROTOR | COOLANT | OTHER)
+### 1. 인프라 설정 (Docker)
+`infra` 디렉토리로 이동하여 데이터베이스와 프록시 서버를 실행합니다.
+```bash
+cd infra
+# .env 파일을 생성하여 MARIADB_ROOT_PASSWORD 등을 설정하세요.
+docker-compose up -d
 ```
 
-> ⚠️ **주의**: `wheel_spec.offset` 컬럼명은 MariaDB 예약어 충돌로 `wheel_offset`으로 변경됨
-
----
-
-## 🔑 핵심 설계 결정
-
-### 1. 소모품 이력 ← Ledger 통합
-`MaintenanceRecord` 별도 테이블 없이 `Ledger.maintenanceType` nullable 컬럼으로 통합.
-차계부 1회 등록으로 소모품 교환 이력이 자동 추적됩니다.
-
-```
-차계부 등록 시: category=정비, amount=70000, maintenanceType=ENGINE_OIL
-→ 차량 조회 API: lastMaintenance.ENGINE_OIL.date 자동 계산
-```
-
-### 2. 휠/타이어 교체 이력 보존
-교체 시 기존 row를 삭제하지 않고 새 `WheelSpec`/`TireSpec` row를 생성.
-`VehicleSpec`은 항상 최신 ID만 참조 → 이력 자동 보존.
-
-### 3. 주행거리 단방향 증가 원칙
-백엔드(`LedgerService`)와 프론트엔드 모두에서 현재 차량 주행거리보다 작은 값 입력 불가.
-
----
-
-## 🚀 실행 방법
-
-### 백엔드
+### 2. 백엔드 실행
 ```bash
 cd backend
+# QueryDSL QClass 생성
+./gradlew :module-core:compileKotlin
+# 웹 서버 실행
 ./gradlew :module-web:bootRun
 ```
 
-### 프론트엔드
+### 3. 프론트엔드 실행
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### DB 마이그레이션
-서버 시작 시 Liquibase가 자동으로 `changelog-master.xml` → `1.0.0` → `1.0.1` 순서로 적용.
+---
+
+## 🔑 핵심 기능 및 설계
+
+### 1. 멀티 모듈 아키텍처
+- **`module-core`**: 순수 도메인 로직과 데이터 접근 계층을 분리하여 재사용성을 높였습니다.
+- **`module-web`**: 사용자 대면 API와 보안을 담당합니다.
+- **`module-bot`**: 외부 플랫폼(텔레그램)과의 인터페이스를 독립적으로 관리합니다.
+
+### 2. 데이터베이스 관리 (Liquibase)
+- 모든 DB 스키마 변경 사항은 `module-web`의 `resources/db` 하위의 XML 파일을 통해 버전 관리됩니다.
+- 초기 스키마(`1.0.0`)부터 정규화(`1.0.1`~`1.0.3`) 과정이 체계적으로 기록되어 있습니다.
+
+### 3. 지능형 차계부 및 정비 이력
+- 차계부 등록 시 '정비' 카테고리를 선택하면 소모품 교환 이력(`MaintenanceType`)이 자동으로 업데이트됩니다.
+- 차량별 마지막 정비일과 주행거리를 기반으로 교체 주기를 계산합니다.
 
 ---
 
-## 📡 주요 API
+## 📡 주요 API 엔드포인트
 
 | Method | URL | 설명 |
 |--------|-----|------|
-| POST | `/api/auth/login` | 로그인 (JWT 반환) |
-| POST | `/api/auth/signup` | 회원가입 |
-| GET | `/api/vehicles` | 내 차량 목록 (lastMaintenance 포함) |
-| POST | `/api/vehicles` | 차량 등록 |
-| PUT | `/api/vehicles/{id}` | 차량 수정 |
-| GET | `/api/ledgers/vehicles/{vehicleId}` | 차계부 목록 |
-| POST | `/api/ledgers` | 차계부 등록 (maintenanceType 선택) |
-| PUT | `/api/ledgers/{id}` | 차계부 수정 |
-| DELETE | `/api/ledgers/{id}` | 차계부 삭제 |
+| POST | `/api/auth/login` | 로그인 및 JWT 발급 |
+| GET | `/api/vehicles` | 내 차량 목록 및 정비 요약 조회 |
+| POST | `/api/ledgers` | 차계부/정비 내역 등록 |
+| GET | `/api/bot/status` | 텔레그램 봇 연결 상태 확인 |
 
 ---
 
-## 📌 현재 개발 현황 (2026-03-25 기준)
+## 📌 현재 개발 현황
 
-### ✅ 완료
-- 차량 기본 CRUD
-- 차량 제원 정규화 (VehicleSpec, WheelSpec, TireSpec)
-- 차계부 CRUD API 연동 (프론트엔드 등록 폼 완성)
-- 소모품 교환 기록 기능 (카테고리 "정비" → 소모품 종류 선택)
-- 주행거리 하한 방어 코드 (프론트 + 백엔드)
-- 텔레그램 봇 계정 연동 및 차계부 파싱
+### ✅ 구현 완료
+- [x] 프로젝트 멀티 모듈 구조 수립
+- [x] JWT 기반 인증 및 인가 시스템
+- [x] 차량 제원 및 정비 타입 정규화 (Liquibase)
+- [x] 텔레그램 봇 메시지 파싱 및 연동 기초
+- [x] Docker Compose 기반 인프라 구성 (MariaDB, Nginx)
+- [x] 프론트엔드 대시보드 및 가계부 목록/상세 조회 UI
+- [x] 시간 데이터 표준화 (Instant) 및 QueryDSL 고도화 (Paging)
+- [x] 정비 기록(MaintenanceRecord) 및 차계부(Ledger) 통합 관리 로직
 
-### 🚧 미완료 (다음 구현 필요)
-1. **차계부 수정(EDIT) API 연동** — `useUpdateLedger` 호출 미구현
-2. **차계부 삭제 API 연동** — 삭제 버튼 UI는 있으나 `useDeleteLedger` 호출 미구현
-3. **차량 제원 수정 UI** — VehicleSpec, WheelSpec, TireSpec 수정 폼
-4. **Opinet 연료 가격 연동** — 주유 시 자동 단가 계산
-5. **월별/연비 트렌드 실데이터 연동** — 현재 mock 데이터
-
-### ⚠️ 알려진 이슈
-- IDE CSS lint 경고(`Unknown at rule @tailwind`)는 IDE 설정 문제, 빌드에는 영향 없음
-- 프론트엔드 차계부 수정 모달(EDIT)은 UI만 있고 API 저장 미연동
+### 🚧 진행 중 / 예정
+- [ ] 유가 정보 API(Opinet) 실시간 연동 및 주유 추천 서비스
+- [ ] 텔레그램 봇 인라인 키보드 기반 차계부 원격 관리
+- [ ] 소모품 교체 주기 알림 알고리즘 고도화 및 Push 알림
+- [ ] DevOps: Docker 이미지 빌드 및 CI/CD 파이프라인 구축
 
 ---
 
-## 🤝 기여 / 인수인계 참고
-
-자세한 작업 이력 및 TODO는 `task.md` 참조 (`.gemini/antigravity/brain/...`).
+## 🤝 컨벤션 (Convention)
+- 모든 문서 및 커밋 메시지는 **한글**을 우선적으로 사용합니다.
+- 코드 변경 사항은 반드시 관련 테스트 또는 검증 과정을 거칩니다.
+- 상세 지침은 `GEMINI.md`를 참조하세요.

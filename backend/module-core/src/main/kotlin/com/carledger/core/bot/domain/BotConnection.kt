@@ -5,7 +5,7 @@ import com.carledger.core.member.domain.Member
 import jakarta.persistence.*
 
 @Entity
-@Table(name = "bot_connection")
+@Table(name = "bot_connection", catalog = "car_ledger")
 class BotConnection(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -10,7 +10,7 @@ import jakarta.persistence.*
  * - 교체 시 새 row 추가 → 과거 row는 삭제하지 않으므로 이력이 자동 보존
  */
 @Entity
-@Table(name = "wheel_spec")
+@Table(name = "wheel_spec", catalog = "car_ledger")
 class WheelSpec(
 
     @Id

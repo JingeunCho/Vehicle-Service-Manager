@@ -42,7 +42,10 @@
 
 ### Backend (Kotlin/Spring)
 - **DDD (Domain-Driven Design)** 아키텍처를 지향한다.
-- QueryDSL 사용 시 `io.github.openfeign.querydsl` 라이브러리를 사용하며, QClass 생성을 위해 `./gradlew :module-core:compileKotlin`을 수행한다.
+- **시간 데이터 표준화**: 모든 엔티티 및 DTO의 시간 필드는 ISO-8601 표준을 따르는 **`Instant`** 타입을 사용한다.
+- **QueryDSL 사용**:
+    - `io.github.openfeign.querydsl` 라이브러리를 사용하며, QClass 생성을 위해 `./gradlew :module-core:compileKotlin`을 수행한다.
+    - 목록 조회 시 `Pageable`을 이용한 페이징과 QueryDSL 전용 `OrderSpecifier`를 통한 동적 정렬을 구현한다.
 - DB 변경 사항은 반드시 Liquibase 스크립트를 통해 관리한다.
 
 ### Frontend (Next.js)

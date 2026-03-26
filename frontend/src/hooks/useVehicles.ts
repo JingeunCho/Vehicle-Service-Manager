@@ -75,6 +75,8 @@ export const useVehicles = () => {
             const { data } = await api.get('/vehicles');
             return data;
         },
+        // 클라이언트 환경에서 토큰이 존재할 때만 쿼리 실행
+        enabled: typeof window !== 'undefined' && !!localStorage.getItem('token'),
     });
 };
 

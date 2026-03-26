@@ -15,7 +15,7 @@ export default function LedgersPage() {
     const [pageSize, setPageSize] = useState(10)
     const [filterCategory, setFilterCategory] = useState<LedgerCategory | "ALL">("ALL")
 
-    const { data: pageData, isLoading: isLedgersLoading } = useLedgers(selectedVehicleId, page, pageSize)
+    const { data: pageData, isLoading: isLedgersLoading } = useLedgers(selectedVehicleId, page, pageSize, filterCategory)
     const { data: metadata } = useLedgerMetadata()
     
     const createLedgerMutation = useCreateLedger()
@@ -30,7 +30,7 @@ export default function LedgersPage() {
     const maintenanceMap = React.useMemo(() => {
         const map: Record<string, string> = {}
         metadata?.maintenanceTypes.forEach(t => {
-            map[t.code] = t.displayName
+            map[t.code] = t.categoryName
         })
         return map
     }, [metadata])
@@ -38,7 +38,7 @@ export default function LedgersPage() {
     const categoryMap = React.useMemo(() => {
         const map: Record<string, string> = {}
         metadata?.categories.forEach(c => {
-            map[c.code] = c.displayName
+            map[c.code] = c.categoryName
         })
         return map
     }, [metadata])
@@ -64,11 +64,11 @@ export default function LedgersPage() {
 
     const ledgers = pageData?.content || []
     
-    const filteredLedgers = ledgers.filter(L => {
-        return (filterCategory === "ALL") || (L.category === filterCategory)
-    })
-
     const targetLedger = selectedLedgerId ? ledgers.find(l => l.id === selectedLedgerId) : null
+
+    // 현재 선택된 차량의 주행거리 정보를 가져옴
+    const currentVehicle = vehicles?.find(v => v.id === (modalMode === "EDIT" ? targetLedger?.vehicleId : selectedVehicleId))
+    const currentMileagePlaceholder = currentVehicle?.currentMileage?.toLocaleString() || "0"
 
     const getCategoryBadge = (cat: LedgerCategory) => {
         const label = categoryMap[cat] || cat
@@ -228,7 +228,7 @@ export default function LedgersPage() {
                             onChange={(e) => setSelectedCategory(e.target.value as LedgerCategory)}
                             className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
                             {metadata?.categories.map(c => (
-                                <option key={c.code} value={c.code}>{c.displayName} ({c.code})</option>
+                                <option key={c.code} value={c.code}>{c.categoryName} ({c.code})</option>
                             ))}
                         </select>
                     </div>
@@ -244,7 +244,7 @@ export default function LedgersPage() {
                             className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none transition font-semibold text-gray-900 cursor-pointer">
                             <option value="">선택 안함 (일반 정비)</option>
                             {metadata?.maintenanceTypes.map(t => (
-                                <option key={t.code} value={t.code}>{t.displayName}</option>
+                                <option key={t.code} value={t.code}>{t.categoryName}</option>
                             ))}
                         </select>
                     </div>
@@ -272,7 +272,7 @@ export default function LedgersPage() {
                     <div>
                         <label className="block text-[13px] font-black text-blue-900 mb-2 ml-1">기록 시점의 주행거리 🚗 *</label>
                         <div className="flex items-center gap-2">
-                            <input name="mileage" type="number" required min={0} defaultValue={isEdit ? (targetLedger?.mileageAtRecord || '') : ''} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200" placeholder="0" />
+                            <input name="mileage" type="number" required min={0} defaultValue={isEdit ? (targetLedger?.mileageAtRecord || '') : ''} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200" placeholder={currentMileagePlaceholder} />
                             <span className="text-sm font-bold text-blue-800 opacity-70 shrink-0">km</span>
                         </div>
                     </div>
@@ -337,9 +337,9 @@ export default function LedgersPage() {
                                     setFilterCategory("ALL")
                                     setPage(0)
                                 }}
-                                className={`px-4 py-2 text-[13px] font-semibold rounded-lg transition-colors border shrink-0 \${filterCategory === "ALL"
-                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                    : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50'
+                                className={`px-4 py-2 text-[13px] font-bold rounded-lg transition-all border shrink-0 ${filterCategory === "ALL"
+                                    ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)] ring-2 ring-blue-500/20'
+                                    : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50 shadow-sm'
                                     }`}
                             >
                                 전체
@@ -351,12 +351,12 @@ export default function LedgersPage() {
                                         setFilterCategory(c.code as LedgerCategory)
                                         setPage(0)
                                     }}
-                                    className={`px-4 py-2 text-[13px] font-semibold rounded-lg transition-colors border shrink-0 \${filterCategory === c.code
-                                        ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                        : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50'
+                                    className={`px-4 py-2 text-[13px] font-bold rounded-lg transition-all border shrink-0 ${filterCategory === c.code
+                                        ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)] ring-2 ring-blue-500/20'
+                                        : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50 shadow-sm'
                                         }`}
                                 >
-                                    {c.displayName}
+                                    {c.categoryName}
                                 </button>
                             ))}
                         </div>
@@ -395,7 +395,7 @@ export default function LedgersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {filteredLedgers.map(l => (
+                            {ledgers.map(l => (
                                 <tr key={l.id} onClick={() => handleRowClick(l.id)} className="hover:bg-blue-50/40 transition-colors group cursor-pointer">
                                     <td className="px-6 py-4 text-[13px] font-bold text-gray-600">
                                         {new Date(l.recordDate).toLocaleDateString()}

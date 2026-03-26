@@ -26,7 +26,9 @@ export default function LoginPage() {
             }
         } catch (error: any) {
             console.error('DEBUG: LoginPage - login error:', error);
-            setErrorMsg(error.response?.data || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.')
+            const data = error.response?.data;
+            const message = typeof data === 'string' ? data : (data?.message || data?.error || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
+            setErrorMsg(message);
         }
     }
 

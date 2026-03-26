@@ -27,6 +27,8 @@ class LedgerRepositoryCustomImpl(
         // 컨텐츠 조회 쿼리
         val content = queryFactory
             .selectFrom(ledger)
+            .join(ledger.vehicle).fetchJoin()
+            .join(ledger.vehicle.member)
             .where(
                 memberEq(memberId),
                 vehicleEq(vehicleId),
@@ -43,6 +45,8 @@ class LedgerRepositoryCustomImpl(
         val total = queryFactory
             .select(ledger.count())
             .from(ledger)
+            .join(ledger.vehicle)
+            .join(ledger.vehicle.member)
             .where(
                 memberEq(memberId),
                 vehicleEq(vehicleId),

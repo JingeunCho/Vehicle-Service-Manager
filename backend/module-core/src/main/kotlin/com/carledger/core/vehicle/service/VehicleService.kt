@@ -163,7 +163,14 @@ class VehicleService(
         carModel?.let { vehicle.carModel = it }
         licensePlate?.let { vehicle.licensePlate = it }
         fuelType?.let { vehicle.fuelType = it }
-        currentMileage?.let { vehicle.currentMileage = it }
+        
+        // 주행거리는 현재보다 큰 값일 때만 업데이트 (이력 소급 입력 시 현재 주행거리가 깎이는 것 방지)
+        currentMileage?.let { 
+            if (it > vehicle.currentMileage) {
+                vehicle.currentMileage = it 
+            }
+        }
+        
         tuningHistory?.let { vehicle.tuningHistory = it }
         insuranceDate?.let { vehicle.insuranceDate = it }
 

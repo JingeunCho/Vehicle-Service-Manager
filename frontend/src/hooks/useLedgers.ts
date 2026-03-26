@@ -30,7 +30,7 @@ export interface Ledger {
 
 export interface EnumMetadata {
     code: string;
-    displayName: string;
+    categoryName: string;
 }
 
 export interface LedgerMetadata {
@@ -46,12 +46,13 @@ export interface PageResponse<T> {
     number: number; // 현재 페이지 번호 (0-based)
 }
 
-export const useLedgers = (vehicleId: number | null, page: number = 0, size: number = 10) => {
+export const useLedgers = (vehicleId: number | null, page: number = 0, size: number = 10, category: LedgerCategory | 'ALL' = 'ALL') => {
     return useQuery<PageResponse<Ledger>>({
-        queryKey: ['ledgers', vehicleId, page, size],
+        queryKey: ['ledgers', vehicleId, page, size, category],
         queryFn: async () => {
             if (vehicleId === null) return { content: [], totalPages: 0, totalElements: 0, size, number: 0 };
-            const { data } = await api.get(`/ledgers/vehicles/${vehicleId}?page=${page}&size=${size}`);
+            const categoryParam = category !== 'ALL' ? `&category=${category}` : '';
+            const { data } = await api.get(`/ledgers/vehicles/${vehicleId}?page=${page}&size=${size}${categoryParam}`);
             return data;
         },
         enabled: vehicleId !== null,

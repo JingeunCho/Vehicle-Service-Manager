@@ -19,7 +19,9 @@ export default function SignupPage() {
             alert('회원가입이 완료되었습니다. 로그인해주세요.')
             router.push('/login')
         } catch (error: any) {
-            setErrorMsg(error.response?.data || '회원가입에 처리 중 에러가 발생했습니다.')
+            const data = error.response?.data;
+            const message = typeof data === 'string' ? data : (data?.message || data?.error || '회원가입 처리 중 에러가 발생했습니다.');
+            setErrorMsg(message);
         }
     }
 

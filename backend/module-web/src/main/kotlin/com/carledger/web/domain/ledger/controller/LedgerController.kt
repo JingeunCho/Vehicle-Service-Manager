@@ -1,6 +1,7 @@
 package com.carledger.web.domain.ledger.controller
 
 import com.carledger.core.ledger.service.LedgerService
+import com.carledger.core.ledger.domain.LedgerCategory
 import com.carledger.web.domain.ledger.dto.CreateLedgerRequest
 import com.carledger.web.domain.ledger.dto.DashboardResponse
 import com.carledger.web.domain.ledger.dto.LedgerResponse
@@ -22,11 +23,12 @@ class LedgerController(
     @GetMapping("/vehicles/{vehicleId}")
     fun getLedgers(
         @PathVariable vehicleId: Long,
+        @RequestParam(required = false) category: LedgerCategory?,
         @org.springframework.data.web.PageableDefault(size = 10) pageable: org.springframework.data.domain.Pageable,
         authentication: Authentication?
     ): ResponseEntity<org.springframework.data.domain.Page<LedgerResponse>> {
         val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
-        val ledgers = ledgerService.getLedgersByVehicle(vehicleId, email, pageable)
+        val ledgers = ledgerService.getLedgersByVehicle(vehicleId, category, email, pageable)
         return ResponseEntity.ok(ledgers.map { LedgerResponse.of(it) })
     }
 

@@ -66,13 +66,14 @@ class LedgerService(
         return savedLedger
     }
 
-    fun getLedgersByVehicle(vehicleId: Long, email: String, pageable: Pageable): Page<Ledger> {
+    fun getLedgersByVehicle(vehicleId: Long, category: LedgerCategory?, email: String, pageable: Pageable): Page<Ledger> {
         val member = memberService.getMemberByEmail(email)
         
         // 동적 쿼리를 통해 단일 차량 또는 전체 차량(0L) 조회를 처리 (페이징 지원)
         return ledgerRepository.findByCriteria(
             memberId = member.id,
-            vehicleId = vehicleId,
+            vehicleId = if (vehicleId == 0L) null else vehicleId,
+            category = category,
             pageable = pageable
         )
     }

@@ -30,8 +30,8 @@ api.interceptors.response.use(
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('token');
                 localStorage.removeItem('userEmail');
-                // 현재 페이지가 로그인 페이지가 아닐 때만 리다이렉트 (무한 루프 방지)
-                if (!window.location.pathname.includes('/login')) {
+                // 현재 페이지가 로그인 또는 회원가입 페이지가 아닐 때만 리다이렉트 (무한 루프 방지)
+                if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
                     window.location.href = '/login';
                 }
             }

@@ -1,47 +1,42 @@
 # 🚗 Car Ledger Project Tasks & Milestone
 
-현재 프로젝트의 개발 진척도를 파악하기 위한 관리 문서입니다. 
-다른 PC에서 작업하실 때 이 문서를 기준으로 진행 상황을 완벽하게 동기화할 수 있습니다.
+가계부 가계부 주행기록 차량 제원 및 정비 관리를 위한 서비스 개발 로직 및 일정 관리 문서입니다.
+차량 정비 및 지출 내역을 PC와 모바일(텔레그램 봇)을 통해 쉽게 기록하고 관리하는 것을 목표로 합니다.
 
-## 🟢 완료된 마일스톤 (Completed)
+## ✅ 프로젝트 개발 완료 단계 (Completed)
 
-- [x] **Phase 0: Project Scaffolding** (Gradle 멀티 모듈 및 Next.js 초기 셋업)
-- [x] **Phase 1: Database & Core Entities** (JPA Entity 및 QueryDSL 셋업)
-- [x] **Phase 2: Bot & Business Logic** (정규식 기반 텔레그램 메세지 파서)
-- [x] **Phase 3: Frontend Dashboard** (Recharts 기반 통계 레이아웃)
-- [x] **Phase 4~7: Spring Boot & Security Configuration** (JWT 필터 인증, 비즈니스 로직 작성)
-- [x] **Phase 8~11: REST APIs (Domain-Driven)** (Auth, Vehicle, Ledger CRUD API 작성)
-- [x] **Phase 12: Telegram Bot Integration** (OTP 발급 및 계정 바인딩 `/start`)
-- [x] **Phase 13: Frontend API Integration Config** (Axios, React-Query 초기 세팅)
-- [x] **Phase 14: Frontend Auth UI** (회원가입, 로그인 페이지 및 Redirection 처리)
-- [x] **Phase 15: Frontend Vehicle Inventory UI** (차량 추가 모달, 디자인 스위칭 UX, 튜닝 내역 모달)
-- [x] **Phase 16: Backend Vehicle Expansion API** (대표 차량 지정 Transaction, 추가 필드 확장)
-- [x] **Phase 17: Frontend Ledgers Table UI** (차계부 상세 리스트, 모달 기반 요약 뷰 및 수정/등록 폼)
+- [x] **Phase 0: Project Scaffolding** (Gradle 멀티모듈 및 Next.js 초기 설정)
+- [x] **Phase 1: Database & Core Entities** (JPA Entity 및 QueryDSL 설정)
+- [x] **Phase 2: Bot & Business Logic** (텔레그램 메시지 파싱 및 비즈니스 로직 기반 마련)
+- [x] **Phase 3: Frontend Dashboard** (Recharts 기반 통계 대시보드 UI 구현)
+- [x] **Phase 8~11: REST APIs (Domain-Driven)** (Auth, Vehicle, Ledger CRUD API 구현)
+- [x] **Phase 12: Telegram Bot Integration** (OTP 인증 및 기초 명령 `/start` 처리)
+- [x] **Phase 13: Frontend API Integration Config** (Axios, React-Query 연동 설정)
+- [x] **Phase 14: Frontend Auth UI** (로그인/회원가입 및 Redirection 로직)
+- [x] **Phase 15: Frontend Vehicle Inventory UI** (차량 리스트, 정보 수정 UX 구현)
+- [x] **Phase 16: Backend Vehicle Expansion API** (상세 차량 제원 저장 및 조회 API)
+- [x] **Phase 17: Frontend Ledgers Table UI** (가계부 목록 테이블, 상세 조회 및 필터링 기능)
+- [x] **Phase 18: Full-Stack Integration Testing** (JWT 인증 기반 엔드투엔드 테스트 완료)
 
-## 🚀 앞으로 진행할 핵심 마일스톤 (To-Do)
+## 🚧 현재 진행 중인 단계 (In Progress)
 
-- [x] **Phase 18: Full-Stack Integration Testing** (JWT 인증 연동, 대시보드 통계 실데이터 연결, 차량 스위칭 검증)
+### Phase 19: Advanced Backend & Bot Features (고급 기능 확장)
+- [x] **QueryDSL 페이징 및 정렬 처리**: `Pageable` 및 `OrderSpecifier`를 이용한 유연한 목록 조회 구현
+- [x] **Dynamic Enum 조회 API**: 정비 타입(Category) 등 Enum 데이터를 프론트엔드에서 동적으로 활용할 수 있는 API 구현
+- [x] **시간 데이터 표준화 (Instant 전환)**: 모든 도메인 및 DTO의 시간 필드를 `Instant` 타입으로 전환하여 Timezone 이슈 해결
+- [x] **정비 기록(MaintenanceRecord) 통합 로직**: 가계부 등록 시 정비 내역이 관련 차량 정보에 자동 업데이트되는 로직 구현
+- [ ] **유가 정보(Opinet) 연동**: 실시간 유가 API 연동을 통한 최저가 주유소 추천 및 지출 분석
+- [ ] **텔레그램 봇 인라인 키보드**: 메시지 내 버튼을 이용한 간편 차계부 등록 UX 개선
 
-## 🚀 앞으로 진행할 핵심 마일스톤 (To-Do)
-
-### Phase 19: Advanced Backend & Bot Features (현재 진행 중)
-- [x] **지출 내역 페이징 고도화**: QueryDSL을 활용한 `Pageable` 조회 및 프론트엔드 무한 스크롤/페이지네이션 UI 추가 (Ellipsis 및 이동 버튼 포함)
-- [x] **Dynamic Enum 메타데이터 API**: 백엔드 Enum에 `categoryName` 필드를 추가하고 프론트엔드에서 필터 목록을 동적으로 받아오도록 리팩토링 (유지보수성 향상)
-- [x] **시스템 날짜 형식 Instant 전환**: 모든 도메인(Vehicle, Ledger) 및 DTO의 날짜 타입을 `Instant`로 통합하여 타임존 독립적 구조 확보
-- [x] **도메인 구조 통합**: `MaintenanceRecord` 엔터티를 삭제하고 `Ledger` 도메인으로의 데이터 통합 및 코드 리팩토링 완료
-- [ ] **유가 연동 알고리즘**: 오피넷(Opinet) 오픈 API 또는 크롤링을 통한 실시간 주유 단가 연동
-- [ ] **텔레그램 봇 고도화**: 복수 차량 소유 유저를 위한 Inline Keyboard 응답 로직 및 간편 기록 기능 추가
-- [ ] **통계 엔진 강화**: 월간 리포트 생성 및 전월 대비 지출 변화 분석 로직 추가
-
-
-### Phase 20: DevOps & Deployment
+### Phase 20: DevOps & Deployment (배포 자동화)
 - [ ] Backend (`module-web`, `module-bot`) 및 Frontend Dockerfile 작성
-- [ ] `docker-compose.yml` 하나로 DB부터 서버까지 한 번에 구동되도록 인프라 구축
-- [ ] GitHub Actions를 이용한 CI/CD 배포 파이프라인 구성
+- [ ] `docker-compose.yml` 고도화 (DB 초기화 스크립트 및 Nginx 환경 설정 최적화)
+- [ ] CI/CD 파이프라인 구축 (GitHub Actions를 이용한 자동 빌드 및 배포)
 
-### Phase 21: Financial Data Integration (Long-term Plan)
-- [ ] **카드사/은행 API 연동**: MyData API 또는 문자/알림 파싱을 통한 결제 내역 자동 수집
-- [ ] **자동차 관련 지출 자동 분류**: 가맹점 정보(주유소, 정비소, 주차장 등) 기반 AI 분류 및 차계부 자동 등록 제안 모듈 구현
+## 📌 향후 계획 (Long-term Plan)
+
+- [ ] **금융 데이터 연동 (MyData)**: 카드사 지출 내역 API 연동을 통한 차계부 자동 입력
+- [ ] **AI 기반 정비 예측**: 주행 거리 및 정비 이력 데이터를 기반으로 한 소모품 교체 주기 AI 예측 모델 도입
 
 ---
-*💡 이 파일(`TASKS.md`)은 `git commit` 에 포함되어 원격 저장소에 업로드되므로, 집/회사 등 어떤 기기에서든 현재까지의 최신 개발 상태를 쉽게 확인할 수 있습니다.*
+*본 문서는 개발 진행 상황에 따라 수시로 업데이트됩니다.*
