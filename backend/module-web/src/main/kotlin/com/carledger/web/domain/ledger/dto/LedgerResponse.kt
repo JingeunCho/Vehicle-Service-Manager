@@ -1,7 +1,7 @@
 package com.carledger.web.domain.ledger.dto
 
 import com.carledger.core.ledger.domain.Ledger
-import java.time.LocalDate
+import java.time.Instant
 
 data class LedgerResponse(
     val id: Long,
@@ -11,7 +11,7 @@ data class LedgerResponse(
     /** 카테고리 (Enum) */
     val category: String,
     val amount: Long,
-    val recordDate: LocalDate,
+    val recordDate: Instant,
     val memo: String,
     val mileageAtRecord: Int,
     /** 소모품 종류 (null이면 일반 차계부 기록) */

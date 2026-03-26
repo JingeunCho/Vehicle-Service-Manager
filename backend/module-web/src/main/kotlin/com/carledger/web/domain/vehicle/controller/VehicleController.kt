@@ -22,8 +22,8 @@ class VehicleController(
         val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
         val vehicles = vehicleService.getMyVehicles(email)
         return ResponseEntity.ok(vehicles.map { vehicle ->
-            val maintenance = ledgerRepository.findMaintenanceRecordsByVehicleId(vehicle.id)
-            VehicleResponse.of(vehicle, maintenance)
+            val maintenanceLedgers = ledgerRepository.findMaintenanceRecordsByVehicleId(vehicle.id)
+            VehicleResponse.of(vehicle, maintenanceLedgers)
         })
     }
 
@@ -31,8 +31,8 @@ class VehicleController(
     fun getVehicle(@PathVariable id: Long, authentication: Authentication?): ResponseEntity<VehicleResponse> {
         val email = authentication?.name ?: throw IllegalArgumentException("Not authenticated")
         val vehicle = vehicleService.getVehicleById(id, email)
-        val maintenance = ledgerRepository.findMaintenanceRecordsByVehicleId(vehicle.id)
-        return ResponseEntity.ok(VehicleResponse.of(vehicle, maintenance))
+        val maintenanceLedgers = ledgerRepository.findMaintenanceRecordsByVehicleId(vehicle.id)
+        return ResponseEntity.ok(VehicleResponse.of(vehicle, maintenanceLedgers))
     }
 
     @PostMapping

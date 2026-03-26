@@ -5,14 +5,14 @@ import com.carledger.core.vehicle.domain.MaintenanceType
 import com.carledger.core.vehicle.domain.Vehicle
 import jakarta.persistence.*
 import java.math.BigDecimal
-import java.time.LocalDate
+import java.time.Instant
 
-enum class LedgerCategory {
-    REFUEL,       // 주유/충전
-    MAINTENANCE,  // 정비/수리
-    CAR_SUPPLIES, // 차량 용품 구입
-    FIXED_COST,   // 보험료, 세금 등 고정비
-    ETC           // 기타
+enum class LedgerCategory(val categoryName: String) {
+    REFUEL("주유/충전"),
+    MAINTENANCE("정비/수리"),
+    CAR_SUPPLIES("차량 용품 구입"),
+    FIXED_COST("보험료/세금"),
+    ETC("기타")
 }
 
 @Entity
@@ -34,7 +34,7 @@ class Ledger(
     var title: String,
 
     @Column(name = "record_date", nullable = false)
-    var recordDate: LocalDate,
+    var recordDate: Instant,
 
     @Column(nullable = false, precision = 15, scale = 2)
     var amount: BigDecimal,

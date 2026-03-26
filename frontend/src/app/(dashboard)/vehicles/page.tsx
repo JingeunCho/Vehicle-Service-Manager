@@ -9,6 +9,7 @@ import {
     useSetPrimaryVehicle,
     Vehicle
 } from '@/hooks/useVehicles'
+import { formatToLocalDate, formatToInputDate, toUtcInstant } from '@/lib/dateUtils'
 
 const getFuelTypeLabel = (fuelType: string) => {
     switch (fuelType) {
@@ -63,6 +64,8 @@ export default function VehiclesPage() {
     const handleAddVehicle = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         const formData = new FormData(e.currentTarget)
+        const insuranceDateRaw = formData.get('insuranceDate') as string
+        
         const vehicleData = {
             carModel: formData.get('carModel') as string,
             name: formData.get('name') as string,
@@ -70,6 +73,7 @@ export default function VehiclesPage() {
             fuelType: formData.get('fuelType') as string,
             currentMileage: parseInt(formData.get('currentMileage') as string),
             tuningHistory: formData.get('tuningHistory') as string,
+            insuranceDate: insuranceDateRaw ? toUtcInstant(insuranceDateRaw) : undefined
         }
 
         try {
@@ -86,6 +90,8 @@ export default function VehiclesPage() {
         if (!editingVehicle) return
 
         const formData = new FormData(e.currentTarget)
+        const insuranceDateRaw = formData.get('insuranceDate') as string
+
         const vehicleData = {
             id: editingVehicle.id,
             carModel: formData.get('carModel') as string,
@@ -94,9 +100,7 @@ export default function VehiclesPage() {
             fuelType: formData.get('fuelType') as string,
             currentMileage: parseInt(formData.get('currentMileage') as string),
             tuningHistory: formData.get('tuningHistory') as string,
-            lastOilChangeDate: formData.get('lastOilChangeDate') as string,
-            oilInterval: parseInt(formData.get('oilInterval') as string),
-            insuranceDate: formData.get('insuranceDate') as string,
+            insuranceDate: insuranceDateRaw ? toUtcInstant(insuranceDateRaw) : undefined
         }
 
         try {
@@ -207,15 +211,15 @@ export default function VehiclesPage() {
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500 font-medium">엔진오일</span>
-                                        <span className="text-blue-600 font-bold">{vehicle.lastMaintenance?.ENGINE_OIL?.date || '-'}</span>
+                                        <span className="text-blue-600 font-bold">{formatToLocalDate(vehicle.lastMaintenance?.ENGINE_OIL?.date)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500 font-medium">미션오일</span>
-                                        <span className="text-gray-600 font-semibold">{vehicle.lastMaintenance?.TRANSMISSION_OIL?.date || '-'}</span>
+                                        <span className="text-gray-600 font-semibold">{formatToLocalDate(vehicle.lastMaintenance?.TRANSMISSION_OIL?.date)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500 font-medium">전륜 브레이크 패드</span>
-                                        <span className="text-gray-600 font-semibold">{vehicle.lastMaintenance?.FRONT_BRAKE_PAD?.date || '-'}</span>
+                                        <span className="text-gray-600 font-semibold">{formatToLocalDate(vehicle.lastMaintenance?.FRONT_BRAKE_PAD?.date)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -282,6 +286,10 @@ export default function VehiclesPage() {
                                         <option value="EV">전기차 (EV)</option>
                                         <option value="HYDROGEN">수소차</option>
                                     </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5">보험 갱신일</label>
+                                    <input name="insuranceDate" type="date" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-medium text-gray-900 cursor-pointer" />
                                 </div>
                             </div>
 
@@ -351,6 +359,10 @@ export default function VehiclesPage() {
                                         <option value="EV">전기차 (EV)</option>
                                         <option value="HYDROGEN">수소차</option>
                                     </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5">보험 갱신일</label>
+                                    <input name="insuranceDate" type="date" defaultValue={formatToInputDate(editingVehicle.insuranceDate)} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-medium text-gray-900 cursor-pointer" />
                                 </div>
                             </div>
 

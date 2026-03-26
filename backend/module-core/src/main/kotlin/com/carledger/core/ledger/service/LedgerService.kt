@@ -12,7 +12,9 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
-import java.time.LocalDate
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 @Service
 @Transactional(readOnly = true)
@@ -29,7 +31,7 @@ class LedgerService(
         category: LedgerCategory,
         title: String,
         amount: Long,
-        recordDate: LocalDate,
+        recordDate: Instant,
         memo: String,
         mileage: Int?,
         maintenanceType: MaintenanceType? = null
@@ -83,7 +85,7 @@ class LedgerService(
         category: LedgerCategory,
         title: String,
         amount: Long,
-        recordDate: LocalDate,
+        recordDate: Instant,
         memo: String,
         mileage: Int?,
         maintenanceType: MaintenanceType? = null
@@ -149,9 +151,14 @@ class LedgerService(
     fun getDashboardAnalytics(vehicleId: Long, email: String): Map<String, Any> {
         val ledgers = getAllLedgersForAnalytics(vehicleId, email)
         
-        val now = LocalDate.now()
+        val zoneId = ZoneId.of("Asia/Seoul") // 통계용 기준 타임존 (한국)
+        val now = ZonedDateTime.now(zoneId)
+        
         val totalExpense = ledgers
-            .filter { it.recordDate.year == now.year && it.recordDate.month == now.month }
+            .filter { 
+                val ledgerDate = it.recordDate.atZone(zoneId)
+                ledgerDate.year == now.year && ledgerDate.month == now.month 
+            }
             .sumOf { it.amount.toLong() }
             
         return mapOf(
@@ -175,14 +182,7 @@ class LedgerService(
                 )
             ),
             "categoryDonut" to LedgerCategory.entries.map { cat ->
-                val displayName = when(cat) {
-                    LedgerCategory.REFUEL -> "주유/충전"
-                    LedgerCategory.MAINTENANCE -> "정비/수리"
-                    LedgerCategory.CAR_SUPPLIES -> "차량 용품 구입"
-                    LedgerCategory.FIXED_COST -> "고정비"
-                    LedgerCategory.ETC -> "기타"
-                }
-                mapOf("name" to displayName, "value" to ledgers.filter { it.category == cat }.sumOf { it.amount.toLong() })
+                mapOf("name" to cat.categoryName, "value" to ledgers.filter { it.category == cat }.sumOf { it.amount.toLong() })
             }.filter { (it["value"] as Long) > 0 },
             "mileageTrend" to listOf(
                 mapOf("month" to "1월", "efficiency" to 8.5)

@@ -3,6 +3,7 @@ package com.carledger.core.vehicle.domain
 import com.carledger.core.common.domain.BaseEntity
 import com.carledger.core.member.domain.Member
 import jakarta.persistence.*
+import java.time.Instant
 
 @Entity
 @Table(name = "vehicle")
@@ -36,7 +37,7 @@ class Vehicle(
     var tuningHistory: String? = null,
 
     @Column(name = "insurance_date")
-    var insuranceDate: java.time.LocalDate? = null,
+    var insuranceDate: Instant? = null,
 
     @Column(name = "is_primary", nullable = false)
     var isPrimary: Boolean = false

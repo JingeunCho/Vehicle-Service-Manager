@@ -2,21 +2,10 @@
 
 import React, { useState } from 'react'
 import { useVehicleContext } from '@/context/VehicleContext'
-import { useLedgers, useCreateLedger, useUpdateLedger, useDeleteLedger, MaintenanceType, LedgerCategory } from '@/hooks/useLedgers'
+import { useLedgers, useCreateLedger, useUpdateLedger, useDeleteLedger, useLedgerMetadata, MaintenanceType, LedgerCategory } from '@/hooks/useLedgers'
+import { formatToLocalDate } from '@/lib/dateUtils'
 
 type ModalMode = "NONE" | "ADD" | "VIEW" | "EDIT"
-
-const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
-    ENGINE_OIL: '엔진오일',
-    TRANSMISSION_OIL: '미션오일',
-    DIFFERENTIAL_OIL: '데프오일',
-    FRONT_BRAKE_PAD: '전륜 브레이크 패드',
-    REAR_BRAKE_PAD: '후륜 브레이크 패드',
-    FRONT_BRAKE_ROTOR: '전륜 브레이크 로터',
-    REAR_BRAKE_ROTOR: '후륜 브레이크 로터',
-    COOLANT: '냉각수',
-    OTHER: '기타 소모품',
-}
 
 export default function LedgersPage() {
     const { vehicles, selectedVehicleId, setSelectedVehicleId } = useVehicleContext()
@@ -26,7 +15,8 @@ export default function LedgersPage() {
     const [pageSize, setPageSize] = useState(10)
     const [filterCategory, setFilterCategory] = useState<LedgerCategory | "ALL">("ALL")
 
-    const { data: pageData, isLoading, error } = useLedgers(selectedVehicleId, page, pageSize)
+    const { data: pageData, isLoading: isLedgersLoading } = useLedgers(selectedVehicleId, page, pageSize)
+    const { data: metadata } = useLedgerMetadata()
     
     const createLedgerMutation = useCreateLedger()
     const updateLedgerMutation = useUpdateLedger()
@@ -37,6 +27,22 @@ export default function LedgersPage() {
     const [selectedCategory, setSelectedCategory] = useState<LedgerCategory>('REFUEL')
     const [selectedMaintenanceType, setSelectedMaintenanceType] = useState<MaintenanceType | ''>('')
 
+    const maintenanceMap = React.useMemo(() => {
+        const map: Record<string, string> = {}
+        metadata?.maintenanceTypes.forEach(t => {
+            map[t.code] = t.displayName
+        })
+        return map
+    }, [metadata])
+
+    const categoryMap = React.useMemo(() => {
+        const map: Record<string, string> = {}
+        metadata?.categories.forEach(c => {
+            map[c.code] = c.displayName
+        })
+        return map
+    }, [metadata])
+
     const handleOpenAddModal = () => {
         setSelectedLedgerId(null)
         setSelectedCategory('REFUEL')
@@ -44,14 +50,18 @@ export default function LedgersPage() {
         setModalMode("ADD")
     }
 
+    const handleOpenEditModal = (ledger: any) => {
+        setSelectedLedgerId(ledger.id)
+        setSelectedCategory(ledger.category)
+        setSelectedMaintenanceType(ledger.maintenanceType || '')
+        setModalMode("EDIT")
+    }
+
     const handleRowClick = (id: number) => {
         setSelectedLedgerId(id)
         setModalMode("VIEW")
     }
 
-    // 서버 사이드 필터링(카테고리)은 추후 API 확장 시 반영하고, 현재는 가져온 데이터 내에서 필터링하거나 
-    // 실제로는 API 파라미터에 category를 추가하는 것이 정석입니다.
-    // 일단 UI상으로는 content를 사용합니다.
     const ledgers = pageData?.content || []
     
     const filteredLedgers = ledgers.filter(L => {
@@ -61,12 +71,13 @@ export default function LedgersPage() {
     const targetLedger = selectedLedgerId ? ledgers.find(l => l.id === selectedLedgerId) : null
 
     const getCategoryBadge = (cat: LedgerCategory) => {
+        const label = categoryMap[cat] || cat
         switch (cat) {
-            case 'REFUEL': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-purple-50 text-purple-700 border border-purple-200">주유</span>
-            case 'MAINTENANCE': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-orange-50 text-orange-700 border border-orange-200">정비</span>
-            case 'CAR_SUPPLIES': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-cyan-50 text-cyan-700 border border-cyan-200">용품구입</span>
-            case 'FIXED_COST': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">고정비</span>
-            default: return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-gray-100 text-gray-700 border border-gray-200">기타</span>
+            case 'REFUEL': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-purple-50 text-purple-700 border border-purple-200">{label}</span>
+            case 'MAINTENANCE': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-orange-50 text-orange-700 border border-orange-200">{label}</span>
+            case 'CAR_SUPPLIES': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-cyan-50 text-cyan-700 border border-cyan-200">{label}</span>
+            case 'FIXED_COST': return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">{label}</span>
+            default: return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-gray-100 text-gray-700 border border-gray-200">{label}</span>
         }
     }
 
@@ -82,7 +93,7 @@ export default function LedgersPage() {
                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
                         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400"></span>{vehicles?.find(v => v.id === targetLedger.vehicleId)?.name || '기타'}</span>
                         <span>|</span>
-                        <span>{targetLedger.recordDate}</span>
+                        <span>{formatToLocalDate(targetLedger.recordDate)}</span>
                     </div>
                 </div>
 
@@ -102,7 +113,7 @@ export default function LedgersPage() {
                         <span className="text-xl">🔧</span>
                         <div>
                             <p className="text-xs font-bold text-orange-700 uppercase tracking-wider">소모품 교환</p>
-                            <p className="text-base font-black text-orange-900">{MAINTENANCE_TYPE_LABELS[targetLedger.maintenanceType]}</p>
+                            <p className="text-base font-black text-orange-900">{maintenanceMap[targetLedger.maintenanceType] || targetLedger.maintenanceType}</p>
                         </div>
                     </div>
                 )}
@@ -138,7 +149,7 @@ export default function LedgersPage() {
                         >
                             삭제
                         </button>
-                        <button type="button" onClick={() => setModalMode("EDIT")} className="px-6 py-3 text-[15px] font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 rounded-xl transition focus:outline-none">
+                        <button type="button" onClick={() => handleOpenEditModal(targetLedger)} className="px-6 py-3 text-[15px] font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 rounded-xl transition focus:outline-none">
                             ✏️ 정보 수정하기
                         </button>
                     </div>
@@ -168,29 +179,29 @@ export default function LedgersPage() {
                 }
 
                 try {
+                    // recordDate(YYYY-MM-DD)를 현재 로컬 시간과 합쳐서 Instant(ISO string)로 변환
+                    // 정밀한 기록을 위해 UTC로 전송
+                    const localDate = new Date(recordDate)
+                    const utcInstant = localDate.toISOString()
+
+                    const payload = {
+                        vehicleId,
+                        category: selectedCategory,
+                        title,
+                        recordDate: utcInstant, 
+                        amount,
+                        mileage: mileage || undefined,
+                        memo,
+                        maintenanceType: selectedMaintenanceType || undefined
+                    }
+
                     if (isEdit && selectedLedgerId) {
                         await updateLedgerMutation.mutateAsync({
                             id: selectedLedgerId,
-                            vehicleId,
-                            category: selectedCategory,
-                            title,
-                            recordDate: new Date(recordDate),
-                            amount,
-                            mileage: mileage || undefined,
-                            memo,
-                            maintenanceType: selectedMaintenanceType || undefined
+                            ...payload
                         })
                     } else {
-                        await createLedgerMutation.mutateAsync({
-                            vehicleId,
-                            category: selectedCategory,
-                            title,
-                            recordDate: new Date(recordDate),
-                            amount,
-                            mileage: mileage || undefined,
-                            memo,
-                            maintenanceType: selectedMaintenanceType || undefined
-                        })
+                        await createLedgerMutation.mutateAsync(payload)
                     }
                     setModalMode("NONE")
                     setSelectedCategory('REFUEL')
@@ -216,11 +227,9 @@ export default function LedgersPage() {
                             value={isEdit ? (targetLedger?.category || 'REFUEL') : selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value as LedgerCategory)}
                             className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
-                            <option value="REFUEL">주유 / 충전 (REFUEL)</option>
-                            <option value="MAINTENANCE">정비 / 수리 (MAINTENANCE)</option>
-                            <option value="CAR_SUPPLIES">차량 용품 구입 (CAR_SUPPLIES)</option>
-                            <option value="FIXED_COST">세금 / 보험료 (FIXED_COST)</option>
-                            <option value="ETC">기타 유지비용 (ETC)</option>
+                            {metadata?.categories.map(c => (
+                                <option key={c.code} value={c.code}>{c.displayName} ({c.code})</option>
+                            ))}
                         </select>
                     </div>
                 </div>
@@ -234,8 +243,8 @@ export default function LedgersPage() {
                             onChange={(e) => setSelectedMaintenanceType(e.target.value as MaintenanceType | '')}
                             className="w-full px-4 py-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none transition font-semibold text-gray-900 cursor-pointer">
                             <option value="">선택 안함 (일반 정비)</option>
-                            {(Object.keys(MAINTENANCE_TYPE_LABELS) as MaintenanceType[]).map(type => (
-                                <option key={type} value={type}>{MAINTENANCE_TYPE_LABELS[type]}</option>
+                            {metadata?.maintenanceTypes.map(t => (
+                                <option key={t.code} value={t.code}>{t.displayName}</option>
                             ))}
                         </select>
                     </div>
@@ -323,19 +332,31 @@ export default function LedgersPage() {
                     <div className="w-full overflow-hidden">
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">분류 별 필터</label>
                         <div className="flex flex-nowrap overflow-x-auto pb-1 gap-2 no-scrollbar">
-                            {(['ALL', 'REFUEL', 'MAINTENANCE', 'CAR_SUPPLIES', 'FIXED_COST', 'ETC'] as const).map(cat => (
+                            <button
+                                onClick={() => {
+                                    setFilterCategory("ALL")
+                                    setPage(0)
+                                }}
+                                className={`px-4 py-2 text-[13px] font-semibold rounded-lg transition-colors border shrink-0 \${filterCategory === "ALL"
+                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                    : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50'
+                                    }`}
+                            >
+                                전체
+                            </button>
+                            {metadata?.categories.map(c => (
                                 <button
-                                    key={cat}
+                                    key={c.code}
                                     onClick={() => {
-                                        setFilterCategory(cat as any)
-                                        setPage(0) // 필터 변경 시 첫 페이지로
+                                        setFilterCategory(c.code as LedgerCategory)
+                                        setPage(0)
                                     }}
-                                    className={`px-4 py-2 text-[13px] font-semibold rounded-lg transition-colors border shrink-0 ${filterCategory === cat
+                                    className={`px-4 py-2 text-[13px] font-semibold rounded-lg transition-colors border shrink-0 \${filterCategory === c.code
                                         ? 'bg-blue-50 border-blue-200 text-blue-700'
                                         : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50'
                                         }`}
                                 >
-                                    {cat === 'ALL' ? '전체' : cat}
+                                    {c.displayName}
                                 </button>
                             ))}
                         </div>
@@ -376,7 +397,9 @@ export default function LedgersPage() {
                         <tbody className="divide-y divide-gray-100">
                             {filteredLedgers.map(l => (
                                 <tr key={l.id} onClick={() => handleRowClick(l.id)} className="hover:bg-blue-50/40 transition-colors group cursor-pointer">
-                                    <td className="px-6 py-4 text-[13px] font-bold text-gray-600">{l.recordDate}</td>
+                                    <td className="px-6 py-4 text-[13px] font-bold text-gray-600">
+                                        {new Date(l.recordDate).toLocaleDateString()}
+                                    </td>
                                     <td className="px-6 py-4 truncate">
                                         <div className="text-sm font-bold text-gray-950 truncate">{l.title}</div>
                                         <div className="text-[11px] font-bold text-gray-400 mt-1">{vehicles?.find(v => v.id === l.vehicleId)?.name || '기타'}</div>

@@ -2,7 +2,7 @@ package com.carledger.web.domain.vehicle.dto
 
 import com.carledger.core.vehicle.domain.DriveType
 import com.carledger.core.vehicle.domain.FuelType
-import java.time.LocalDate
+import java.time.Instant
 
 data class CreateVehicleRequest(
     val name: String,
@@ -11,7 +11,7 @@ data class CreateVehicleRequest(
     val fuelType: FuelType,
     val currentMileage: Int = 0,
     val tuningHistory: String? = null,
-    val insuranceDate: LocalDate? = null,
+    val insuranceDate: Instant? = null,
     // VehicleSpec
     val driveType: DriveType? = null,
     val frontWheelBrand: String? = null,
@@ -43,7 +43,7 @@ data class UpdateVehicleRequest(
     val fuelType: FuelType? = null,
     val currentMileage: Int? = null,
     val tuningHistory: String? = null,
-    val insuranceDate: LocalDate? = null,
+    val insuranceDate: Instant? = null,
     // VehicleSpec
     val driveType: DriveType? = null,
     val frontWheelBrand: String? = null,

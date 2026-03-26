@@ -28,6 +28,16 @@ export interface Ledger {
     maintenanceType?: MaintenanceType;
 }
 
+export interface EnumMetadata {
+    code: string;
+    displayName: string;
+}
+
+export interface LedgerMetadata {
+    categories: EnumMetadata[];
+    maintenanceTypes: EnumMetadata[];
+}
+
 export interface PageResponse<T> {
     content: T[];
     totalPages: number;
@@ -89,5 +99,16 @@ export const useDeleteLedger = () => {
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
         },
+    });
+};
+
+export const useLedgerMetadata = () => {
+    return useQuery<LedgerMetadata>({
+        queryKey: ['ledger-metadata'],
+        queryFn: async () => {
+            const { data } = await api.get('/metadata/ledgers');
+            return data;
+        },
+        staleTime: 1000 * 60 * 60, // 메타데이터는 1시간 동안 유지 (변경 빈도 낮음)
     });
 };

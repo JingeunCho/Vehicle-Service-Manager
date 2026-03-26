@@ -5,7 +5,7 @@ import com.carledger.core.vehicle.domain.*
 import com.carledger.core.vehicle.repository.VehicleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDate
+import java.time.Instant
 
 @Service
 @Transactional(readOnly = true)
@@ -36,7 +36,7 @@ class VehicleService(
         fuelType: FuelType,
         currentMileage: Int,
         tuningHistory: String? = null,
-        insuranceDate: LocalDate? = null,
+        insuranceDate: Instant? = null,
         // VehicleSpec
         driveType: DriveType? = null,
         // Front Wheel
@@ -130,7 +130,7 @@ class VehicleService(
         fuelType: FuelType? = null,
         currentMileage: Int? = null,
         tuningHistory: String? = null,
-        insuranceDate: LocalDate? = null,
+        insuranceDate: Instant? = null,
         driveType: DriveType? = null,
         // Front Wheel
         frontWheelBrand: String? = null,

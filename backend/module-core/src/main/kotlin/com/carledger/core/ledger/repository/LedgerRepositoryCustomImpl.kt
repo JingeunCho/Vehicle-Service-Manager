@@ -9,7 +9,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Repository
-import java.time.LocalDate
+import java.time.Instant
 
 @Repository
 class LedgerRepositoryCustomImpl(
@@ -20,8 +20,8 @@ class LedgerRepositoryCustomImpl(
         memberId: Long,
         vehicleId: Long?,
         category: LedgerCategory?,
-        startDate: LocalDate?,
-        endDate: LocalDate?,
+        startDate: Instant?,
+        endDate: Instant?,
         pageable: Pageable
     ): Page<Ledger> {
         // 컨텐츠 조회 쿼리
@@ -68,7 +68,7 @@ class LedgerRepositoryCustomImpl(
         return category?.let { ledger.category.eq(it) }
     }
 
-    private fun dateBetween(startDate: LocalDate?, endDate: LocalDate?): BooleanExpression? {
+    private fun dateBetween(startDate: Instant?, endDate: Instant?): BooleanExpression? {
         if (startDate == null && endDate == null) return null
         if (startDate != null && endDate == null) return ledger.recordDate.goe(startDate)
         if (startDate == null && endDate != null) return ledger.recordDate.loe(endDate)

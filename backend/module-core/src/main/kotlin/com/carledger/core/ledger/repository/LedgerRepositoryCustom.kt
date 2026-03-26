@@ -4,7 +4,7 @@ import com.carledger.core.ledger.domain.Ledger
 import com.carledger.core.ledger.domain.LedgerCategory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
-import java.time.LocalDate
+import java.time.Instant
 
 interface LedgerRepositoryCustom {
     /**
@@ -17,8 +17,8 @@ interface LedgerRepositoryCustom {
         memberId: Long,
         vehicleId: Long? = null,
         category: LedgerCategory? = null,
-        startDate: LocalDate? = null,
-        endDate: LocalDate? = null,
+        startDate: Instant? = null,
+        endDate: Instant? = null,
         pageable: Pageable
     ): Page<Ledger>
 }

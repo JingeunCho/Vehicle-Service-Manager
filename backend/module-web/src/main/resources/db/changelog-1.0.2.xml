@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="1.0.2-1" author="jingeun-cho">
+        <comment>차계부 기록일 및 공통 시각 타입을 Instant(DATETIME(6))로 변경</comment>
+        
+        <!-- Ledger 테이블 -->
+        <modifyDataType tableName="ledger" columnName="record_date" newDataType="DATETIME(6)"/>
+        <modifyDataType tableName="ledger" columnName="created_at" newDataType="DATETIME(6)"/>
+        <modifyDataType tableName="ledger" columnName="updated_at" newDataType="DATETIME(6)"/>
+
+        <!-- Member 테이블 -->
+        <modifyDataType tableName="member" columnName="created_at" newDataType="DATETIME(6)"/>
+        <modifyDataType tableName="member" columnName="updated_at" newDataType="DATETIME(6)"/>
+
+        <!-- MemberSettings 테이블 -->
+        <modifyDataType tableName="member_settings" columnName="created_at" newDataType="DATETIME(6)"/>
+        <modifyDataType tableName="member_settings" columnName="updated_at" newDataType="DATETIME(6)"/>
+
+        <!-- Vehicle 테이블 -->
+        <modifyDataType tableName="vehicle" columnName="created_at" newDataType="DATETIME(6)"/>
+        <modifyDataType tableName="vehicle" columnName="updated_at" newDataType="DATETIME(6)"/>
+
+        <!-- VehicleSpec 테이블 -->
+        <modifyDataType tableName="vehicle_spec" columnName="created_at" newDataType="DATETIME(6)"/>
+        <modifyDataType tableName="vehicle_spec" columnName="updated_at" newDataType="DATETIME(6)"/>
+
+        <!-- WheelSpec 테이블 -->
+        <modifyDataType tableName="wheel_spec" columnName="created_at" newDataType="DATETIME(6)"/>
+        <modifyDataType tableName="wheel_spec" columnName="updated_at" newDataType="DATETIME(6)"/>
+
+        <!-- TireSpec 테이블 -->
+        <modifyDataType tableName="tire_spec" columnName="created_at" newDataType="DATETIME(6)"/>
+        <modifyDataType tableName="tire_spec" columnName="updated_at" newDataType="DATETIME(6)"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -6,7 +6,7 @@ import com.carledger.core.bot.service.BotConnectionService
 import com.carledger.core.ledger.service.LedgerService
 import com.carledger.core.vehicle.service.VehicleService
 import org.springframework.stereotype.Service
-import java.time.LocalDate
+import java.time.Instant
 
 @Service
 class BotMessageProcessor(
@@ -45,7 +45,7 @@ class BotMessageProcessor(
                 vehicleId = defaultVehicle.id,
                 category = parsedMessage.category,
                 amount = parsedMessage.amount,
-                recordDate = LocalDate.now(),
+                recordDate = Instant.now(),
                 memo = parsedMessage.memo ?: "",
                 mileage = parsedMessage.mileage,
                 title = parsedMessage.title,

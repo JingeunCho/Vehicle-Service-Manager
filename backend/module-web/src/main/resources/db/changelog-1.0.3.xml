@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="1.0.3-1" author="jingeun-cho">
+        <comment>차량 보험 갱신일 시각 타입을 Instant(DATETIME(6))로 변경</comment>
+
+        <!-- Vehicle 테이블 insurance_date -->
+        <modifyDataType tableName="vehicle" columnName="insurance_date" newDataType="DATETIME(6)"/>
+    </changeSet>
+
+</databaseChangeLog>

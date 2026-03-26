@@ -6,7 +6,7 @@ import com.carledger.core.vehicle.domain.FuelType
 import com.carledger.core.vehicle.domain.MaintenanceType
 import com.carledger.core.vehicle.domain.Vehicle
 import java.math.BigDecimal
-import java.time.LocalDate
+import java.time.Instant
 
 data class WheelSpecResponse(
     val id: Long,
@@ -36,7 +36,7 @@ data class VehicleSpecResponse(
 
 /** 소모품 종류별 마지막 정비 요약 (ledger 기반) */
 data class LastMaintenanceInfo(
-    val date: LocalDate,
+    val date: Instant,
     val mileageAtRecord: Int?,
     val notes: String?,
     val cost: BigDecimal?
@@ -50,7 +50,7 @@ data class VehicleResponse(
     val fuelType: FuelType,
     val currentMileage: Int,
     val tuningHistory: String?,
-    val insuranceDate: LocalDate?,
+    val insuranceDate: Instant?,
     val isPrimary: Boolean,
     val spec: VehicleSpecResponse?,
     /** 소모품 종류별 마지막 정비 이력 요약 (key: MaintenanceType.name()) */
