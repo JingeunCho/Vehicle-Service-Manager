@@ -33,21 +33,21 @@ export default function Sidebar({ className = "" }: { className?: string }) {
                         </Link>
                     </li>
                     <li>
+                        <Link href="/ledgers" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/ledgers'
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 font-semibold'
+                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                            }`}>
+                            <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                            차량 관리 내역
+                        </Link>
+                    </li>
+                    <li>
                         <Link href="/vehicles" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/vehicles'
                             ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 font-semibold'
                             : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                             }`}>
                             <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                             차량 관리
-                        </Link>
-                    </li>
-                    <li>
-                        <Link href="/ledgers" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/ledgers'
-                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 font-semibold'
-                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                            }`}>
-                            <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-                            차계부 지출 조회
                         </Link>
                     </li>
                 </ul>

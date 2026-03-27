@@ -14,6 +14,10 @@ data class CreateLedgerRequest(
     val recordDate: Instant,
     val memo: String = "",
     val mileage: Int? = null,
+    /** 단가 (주유 시 선택) */
+    val unitPrice: Long? = null,
+    /** 주유량 (주유 시 선택) */
+    val volume: Double? = null,
     /** 소모품 교환 종류 (선택) - 입력 시 차량 정비 이력 추적에 활용 */
     val maintenanceType: MaintenanceType? = null
 )

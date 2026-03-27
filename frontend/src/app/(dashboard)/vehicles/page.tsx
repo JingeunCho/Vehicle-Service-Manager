@@ -136,7 +136,7 @@ export default function VehiclesPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                 {/* 차량 카드 리스트 */}
                 {vehicles?.map(vehicle => {
                     const isPrimary = (vehicle as any).primary || (vehicle as any).isPrimary;

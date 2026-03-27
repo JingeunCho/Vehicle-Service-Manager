@@ -3,13 +3,17 @@
 import React, { useState } from 'react'
 import { useVehicleContext } from '@/context/VehicleContext'
 import { useLedgers, useCreateLedger, useUpdateLedger, useDeleteLedger, useLedgerMetadata, MaintenanceType, LedgerCategory } from '@/hooks/useLedgers'
-import { formatToLocalDate } from '@/lib/dateUtils'
+import {
+    formatToLocalDate,
+    formatToLocalDateTime,
+    formatToDateTimeShort
+} from '@/lib/dateUtils'
 
 type ModalMode = "NONE" | "ADD" | "VIEW" | "EDIT"
 
 export default function LedgersPage() {
     const { vehicles, selectedVehicleId, setSelectedVehicleId } = useVehicleContext()
-    
+
     // 페이징 상태
     const [page, setPage] = useState(0)
     const [pageSize, setPageSize] = useState(10)
@@ -17,7 +21,7 @@ export default function LedgersPage() {
 
     const { data: pageData, isLoading: isLedgersLoading } = useLedgers(selectedVehicleId, page, pageSize, filterCategory)
     const { data: metadata } = useLedgerMetadata()
-    
+
     const createLedgerMutation = useCreateLedger()
     const updateLedgerMutation = useUpdateLedger()
     const deleteLedgerMutation = useDeleteLedger()
@@ -26,6 +30,13 @@ export default function LedgersPage() {
     const [selectedLedgerId, setSelectedLedgerId] = useState<number | null>(null)
     const [selectedCategory, setSelectedCategory] = useState<LedgerCategory>('REFUEL')
     const [selectedMaintenanceType, setSelectedMaintenanceType] = useState<MaintenanceType | ''>('')
+
+    // 자동 계산을 위한 폼 상태
+    const [formAmount, setFormAmount] = useState<number | ''>('')
+    const [formUnitPrice, setFormUnitPrice] = useState<number | ''>('')
+    const [formVolume, setFormVolume] = useState<number | ''>('')
+    const [formVehicleId, setFormVehicleId] = useState<number | null>(null)
+    const [formTime, setFormTime] = useState<string>('')
 
     const maintenanceMap = React.useMemo(() => {
         const map: Record<string, string> = {}
@@ -43,10 +54,25 @@ export default function LedgersPage() {
         return map
     }, [metadata])
 
+    const fuelTypeMap = React.useMemo(() => {
+        const map: Record<string, string> = {}
+        metadata?.fuelTypes.forEach(f => {
+            map[f.code] = f.categoryName
+        })
+        return map
+    }, [metadata])
+
+    const getFuelTypeName = (code: string | undefined) => code ? (fuelTypeMap[code] || code) : '-'
+
     const handleOpenAddModal = () => {
         setSelectedLedgerId(null)
         setSelectedCategory('REFUEL')
         setSelectedMaintenanceType('')
+        setFormAmount('')
+        setFormUnitPrice('')
+        setFormVolume('')
+        setFormVehicleId(selectedVehicleId || (vehicles?.[0]?.id || null))
+        setFormTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
         setModalMode("ADD")
     }
 
@@ -54,6 +80,11 @@ export default function LedgersPage() {
         setSelectedLedgerId(ledger.id)
         setSelectedCategory(ledger.category)
         setSelectedMaintenanceType(ledger.maintenanceType || '')
+        setFormAmount(ledger.amount || '')
+        setFormUnitPrice(ledger.unitPrice || '')
+        setFormVolume(ledger.volume || '')
+        setFormVehicleId(ledger.vehicleId)
+        setFormTime(new Date(ledger.recordDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
         setModalMode("EDIT")
     }
 
@@ -63,11 +94,11 @@ export default function LedgersPage() {
     }
 
     const ledgers = pageData?.content || []
-    
+
     const targetLedger = selectedLedgerId ? ledgers.find(l => l.id === selectedLedgerId) : null
 
     // 현재 선택된 차량의 주행거리 정보를 가져옴
-    const currentVehicle = vehicles?.find(v => v.id === (modalMode === "EDIT" ? targetLedger?.vehicleId : selectedVehicleId))
+    const currentVehicle = vehicles?.find(v => v.id === (modalMode !== "NONE" ? formVehicleId : selectedVehicleId))
     const currentMileagePlaceholder = currentVehicle?.currentMileage?.toLocaleString() || "0"
 
     const getCategoryBadge = (cat: LedgerCategory) => {
@@ -93,7 +124,7 @@ export default function LedgersPage() {
                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
                         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400"></span>{vehicles?.find(v => v.id === targetLedger.vehicleId)?.name || '기타'}</span>
                         <span>|</span>
-                        <span>{formatToLocalDate(targetLedger.recordDate)}</span>
+                        <span>{formatToLocalDateTime(targetLedger.recordDate)}</span>
                     </div>
                 </div>
 
@@ -107,6 +138,19 @@ export default function LedgersPage() {
                         <p className="text-2xl font-black text-gray-800 tracking-tight">{targetLedger.mileageAtRecord.toLocaleString()} <span className="text-sm font-bold text-gray-500 opacity-70">km</span></p>
                     </div>
                 </div>
+
+                {targetLedger.category === 'REFUEL' && (targetLedger.unitPrice || targetLedger.volume) && (
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50/50 rounded-2xl border border-purple-100">
+                        <div>
+                            <p className="text-[11px] font-black text-purple-600 uppercase tracking-wider mb-1">{targetLedger.fuelType === 'EV' ? '충전 단가' : '주유 단가'}</p>
+                            <p className="text-lg font-black text-purple-900">{targetLedger.unitPrice?.toLocaleString() || '-'} <span className="text-xs font-bold opacity-70">원/{targetLedger.fuelType === 'EV' ? 'kWh' : 'L'}</span></p>
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-black text-purple-600 uppercase tracking-wider mb-1">{targetLedger.fuelType === 'EV' ? '충전량' : '주유량'}</p>
+                            <p className="text-lg font-black text-purple-900">{targetLedger.volume?.toLocaleString() || '-'} <span className="text-xs font-bold opacity-70">{targetLedger.fuelType === 'EV' ? 'kWh' : 'L'}</span></p>
+                        </div>
+                    </div>
+                )}
 
                 {targetLedger.maintenanceType && (
                     <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-xl">
@@ -169,8 +213,11 @@ export default function LedgersPage() {
                 const vehicleId = Number(fd.get('vehicleId'))
                 const title = String(fd.get('title') || '')
                 const recordDate = String(fd.get('recordDate') || '')
+                const recordTime = String(fd.get('recordTime') || '00:00')
                 const amount = Number(fd.get('amount') || 0)
                 const mileage = Number(fd.get('mileage') || 0)
+                const unitPrice = fd.get('unitPrice') ? Number(fd.get('unitPrice')) : undefined
+                const volume = fd.get('volume') ? Number(fd.get('volume')) : undefined
                 const memo = String(fd.get('memo') || '')
 
                 if (!vehicleId || !title || !recordDate || !amount) {
@@ -179,18 +226,19 @@ export default function LedgersPage() {
                 }
 
                 try {
-                    // recordDate(YYYY-MM-DD)를 현재 로컬 시간과 합쳐서 Instant(ISO string)로 변환
-                    // 정밀한 기록을 위해 UTC로 전송
-                    const localDate = new Date(recordDate)
-                    const utcInstant = localDate.toISOString()
+                    // date와 time을 합쳐서 UTC Instant로 변환
+                    const { toUtcInstant } = await import('@/lib/dateUtils')
+                    const utcInstant = toUtcInstant(recordDate, recordTime)
 
                     const payload = {
                         vehicleId,
                         category: selectedCategory,
                         title,
-                        recordDate: utcInstant, 
-                        amount,
+                        recordDate: utcInstant,
+                        amount: Number(formAmount) || 0,
                         mileage: mileage || undefined,
+                        unitPrice: selectedCategory === 'REFUEL' ? (Number(formUnitPrice) || undefined) : undefined,
+                        volume: selectedCategory === 'REFUEL' ? (Number(formVolume) || undefined) : undefined,
                         memo,
                         maintenanceType: selectedMaintenanceType || undefined
                     }
@@ -214,9 +262,14 @@ export default function LedgersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">지출 대상 차량 🚙 *</label>
-                        <select name="vehicleId" required defaultValue={isEdit ? targetLedger?.vehicleId.toString() : (selectedVehicleId?.toString() || '')} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
+                        <select
+                            name="vehicleId"
+                            required
+                            value={formVehicleId?.toString() || ''}
+                            onChange={(e) => setFormVehicleId(Number(e.target.value))}
+                            className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm">
                             {vehicles?.map(v => (
-                                <option key={v.id} value={v.id.toString()}>{v.name} ({v.carModel})</option>
+                                <option key={v.id} value={v.id.toString()}>{v.name} ({v.carModel} / {getFuelTypeName(v.fuelType)})</option>
                             ))}
                         </select>
                     </div>
@@ -253,11 +306,22 @@ export default function LedgersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div className="md:col-span-2">
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">세부 지출 내용 *</label>
-                        <input name="title" type="text" required defaultValue={isEdit ? (targetLedger?.title || '') : ''} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 shadow-sm" placeholder="예: 판교 SK주유소 고급유" />
+                        <input
+                            name="title"
+                            type="text"
+                            required
+                            defaultValue={isEdit ? (targetLedger?.title || '') : ''}
+                            className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 shadow-sm"
+                            placeholder={currentVehicle?.fuelType === 'EV' ? "예: 판교 통합충전소 급속충전" : "예: 판교 SK주유소 고급유"}
+                        />
                     </div>
-                    <div>
+                    <div className="md:col-span-1">
                         <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">결제일 *</label>
-                        <input name="recordDate" type="date" required defaultValue={isEdit ? (targetLedger?.recordDate || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0]} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm text-sm" />
+                        <input name="recordDate" type="date" required defaultValue={isEdit ? (targetLedger?.recordDate || new Date().toISOString().split('T')[0]).split('T')[0] : new Date().toISOString().split('T')[0]} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm text-sm" />
+                    </div>
+                    <div className="md:col-span-1">
+                        <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">시간 *</label>
+                        <input name="recordTime" type="time" required value={formTime} onChange={(e) => setFormTime(e.target.value)} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-semibold text-gray-900 cursor-pointer shadow-sm text-sm" />
                     </div>
                 </div>
 
@@ -265,7 +329,22 @@ export default function LedgersPage() {
                     <div>
                         <label className="block text-[13px] font-black text-blue-900 mb-2 ml-1">총 결제 금액 💰 *</label>
                         <div className="flex items-center gap-2">
-                            <input name="amount" type="number" required min={0} defaultValue={isEdit ? (targetLedger?.amount || '') : ''} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200" placeholder="0" />
+                            <input
+                                name="amount"
+                                type="number"
+                                required
+                                min={0}
+                                value={formAmount}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? '' : Number(e.target.value);
+                                    setFormAmount(val);
+                                    if (selectedCategory === 'REFUEL' && typeof val === 'number' && typeof formUnitPrice === 'number' && formUnitPrice > 0) {
+                                        setFormVolume(Math.round((val / formUnitPrice) * 100) / 100);
+                                    }
+                                }}
+                                className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 outline-none transition font-black text-blue-900 text-right text-lg placeholder-blue-200"
+                                placeholder="0"
+                            />
                             <span className="text-sm font-bold text-blue-800 opacity-70 shrink-0">원</span>
                         </div>
                     </div>
@@ -277,6 +356,62 @@ export default function LedgersPage() {
                         </div>
                     </div>
                 </div>
+
+                {(isEdit ? targetLedger?.category : selectedCategory) === 'REFUEL' && (
+                    <div className="p-5 bg-purple-50 rounded-2xl border border-purple-100 grid grid-cols-1 md:grid-cols-2 gap-8 shadow-inner">
+                        <div>
+                            <label className="block text-[13px] font-black text-purple-900 mb-2 ml-1">
+                                {currentVehicle?.fuelType === 'EV' ? '충전 단가 (kWh당) ⚡' : '주유 단가 (L당) ⛽'}
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    name="unitPrice"
+                                    type="number"
+                                    min={0}
+                                    value={formUnitPrice}
+                                    onChange={(e) => {
+                                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                                        setFormUnitPrice(val);
+                                        if (typeof val === 'number' && val > 0) {
+                                            if (typeof formAmount === 'number' && formAmount > 0) {
+                                                setFormVolume(Math.round((formAmount / val) * 100) / 100);
+                                            } else if (typeof formVolume === 'number' && formVolume > 0) {
+                                                setFormAmount(Math.round(val * formVolume));
+                                            }
+                                        }
+                                    }}
+                                    className="w-full px-4 py-3 bg-white border border-purple-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 outline-none transition font-black text-purple-900 text-right text-lg placeholder-purple-200"
+                                    placeholder="0"
+                                />
+                                <span className="text-sm font-bold text-purple-800 opacity-70 shrink-0">원/{currentVehicle?.fuelType === 'EV' ? 'kWh' : 'L'}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-[13px] font-black text-purple-900 mb-2 ml-1">
+                                {currentVehicle?.fuelType === 'EV' ? '충전량 (kWh) 🔋' : '주유량 (L) 🧪'}
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    name="volume"
+                                    type="number"
+                                    step="0.01"
+                                    min={0}
+                                    value={formVolume}
+                                    onChange={(e) => {
+                                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                                        setFormVolume(val);
+                                        if (typeof val === 'number' && typeof formUnitPrice === 'number' && formUnitPrice > 0) {
+                                            setFormAmount(Math.round(formUnitPrice * val));
+                                        }
+                                    }}
+                                    className="w-full px-4 py-3 bg-white border border-purple-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 outline-none transition font-black text-purple-900 text-right text-lg placeholder-purple-200"
+                                    placeholder="0.00"
+                                />
+                                <span className="text-sm font-bold text-purple-800 opacity-70 shrink-0">{currentVehicle?.fuelType === 'EV' ? 'kWh' : 'L'}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">메모 (선택)</label>
@@ -324,7 +459,7 @@ export default function LedgersPage() {
                         >
                             <option value="0">🚗 모든 차량 정보 보기</option>
                             {vehicles?.map(v => (
-                                <option key={v.id} value={v.id.toString()}>{v.isPrimary ? '⭐ ' : ''}{v.name}</option>
+                                <option key={v.id} value={v.id.toString()}>{v.isPrimary ? '⭐ ' : ''}{v.name} ({getFuelTypeName(v.fuelType)})</option>
                             ))}
                         </select>
                     </div>
@@ -398,7 +533,7 @@ export default function LedgersPage() {
                             {ledgers.map(l => (
                                 <tr key={l.id} onClick={() => handleRowClick(l.id)} className="hover:bg-blue-50/40 transition-colors group cursor-pointer">
                                     <td className="px-6 py-4 text-[13px] font-bold text-gray-600">
-                                        {new Date(l.recordDate).toLocaleDateString()}
+                                        {formatToDateTimeShort(l.recordDate)}
                                     </td>
                                     <td className="px-6 py-4 truncate">
                                         <div className="text-sm font-bold text-gray-950 truncate">{l.title}</div>
@@ -419,12 +554,12 @@ export default function LedgersPage() {
                 {/* 페이징 컨트롤러 */}
                 <div className="px-6 py-5 bg-gray-50/50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="text-sm text-gray-500 font-medium">
-                        총 <span className="font-bold text-gray-900">{pageData?.totalElements || 0}</span>개의 항목 중 
+                        총 <span className="font-bold text-gray-900">{pageData?.totalElements || 0}</span>개의 항목 중
                         {pageData && pageData.totalElements > 0 ? (
                             ` ${page * pageSize + 1} - ${Math.min((page + 1) * pageSize, pageData.totalElements)}`
                         ) : ' 0'} 표시
                     </div>
-                    
+
                     <div className="flex items-center gap-1.5">
                         {/* 첫 페이지로 */}
                         <button
@@ -444,12 +579,12 @@ export default function LedgersPage() {
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
                         </button>
-                        
+
                         <div className="flex items-center gap-1">
                             {(() => {
                                 const totalPages = pageData?.totalPages || 0;
                                 const pageNumbers = [];
-                                
+
                                 if (totalPages <= 7) {
                                     for (let i = 0; i < totalPages; i++) pageNumbers.push(i);
                                 } else {
@@ -473,8 +608,8 @@ export default function LedgersPage() {
                                         <button
                                             key={n}
                                             onClick={() => setPage(n)}
-                                            className={`w-9 h-9 rounded-lg text-[13px] font-black transition-all ${page === n 
-                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                                            className={`w-9 h-9 rounded-lg text-[13px] font-black transition-all ${page === n
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                                                 : 'text-gray-900 bg-gray-50 hover:bg-white hover:text-blue-600 border border-gray-200'}`}
                                         >
                                             {n + 1}

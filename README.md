@@ -129,6 +129,10 @@ npm run dev
 - [x] 프론트엔드 대시보드 및 가계부 목록/상세 조회 UI
 - [x] 시간 데이터 표준화 (Instant) 및 QueryDSL 고도화 (Paging)
 - [x] 정비 기록(MaintenanceRecord) 및 차계부(Ledger) 통합 관리 로직
+- [x] 대시보드 성능 최적화: 단일 API를 4개의 독립적 엔드포인트로 분리 (Summaries, Spending, History, Efficiency)
+- [x] 전기차(EV) 대응: 유종에 따른 동적 라벨(주유/충전) 및 단위(L/kWh) 전환 로직 구현
+- [x] 정밀 기록 시스템: 날짜 단위에서 시/분 단위까지 정밀한 시간 데이터 기록 및 표시
+- [x] UI 표준화: ENUM 코드 대신 사용자 친화적인 한글 이름(가솔린, 전기 등) 표시
 
 ### 🚧 진행 중 / 예정
 - [ ] 유가 정보 API(Opinet) 실시간 연동 및 주유 추천 서비스

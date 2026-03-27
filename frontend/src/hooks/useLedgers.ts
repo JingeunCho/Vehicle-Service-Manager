@@ -17,6 +17,8 @@ export type LedgerCategory = 'REFUEL' | 'MAINTENANCE' | 'CAR_SUPPLIES' | 'FIXED_
 export interface Ledger {
     id: number;
     vehicleId: number;
+    vehicleName?: string;
+    fuelType?: string;
     /** 세부 지출 내용 */
     title: string;
     /** 카테고리 (Enum) */
@@ -25,6 +27,8 @@ export interface Ledger {
     recordDate: string;
     memo: string;
     mileageAtRecord: number;
+    unitPrice?: number;
+    volume?: number;
     maintenanceType?: MaintenanceType;
 }
 
@@ -36,6 +40,7 @@ export interface EnumMetadata {
 export interface LedgerMetadata {
     categories: EnumMetadata[];
     maintenanceTypes: EnumMetadata[];
+    fuelTypes: EnumMetadata[];
 }
 
 export interface PageResponse<T> {

@@ -7,5 +7,6 @@ data class EnumMetadataResponse(
 
 data class LedgerMetadataResponse(
     val categories: List<EnumMetadataResponse>,
-    val maintenanceTypes: List<EnumMetadataResponse>
+    val maintenanceTypes: List<EnumMetadataResponse>,
+    val fuelTypes: List<EnumMetadataResponse>
 )

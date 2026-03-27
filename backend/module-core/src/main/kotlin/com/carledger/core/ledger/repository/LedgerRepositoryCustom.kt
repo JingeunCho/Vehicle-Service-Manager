@@ -15,7 +15,7 @@ interface LedgerRepositoryCustom {
      */
     fun findByCriteria(
         memberId: Long,
-        vehicleId: Long? = null,
+        vehicleIds: List<Long>? = null,
         category: LedgerCategory? = null,
         startDate: Instant? = null,
         endDate: Instant? = null,

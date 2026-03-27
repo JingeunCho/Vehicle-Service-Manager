@@ -18,7 +18,7 @@ class LedgerRepositoryCustomImpl(
 
     override fun findByCriteria(
         memberId: Long,
-        vehicleId: Long?,
+        vehicleIds: List<Long>?,
         category: LedgerCategory?,
         startDate: Instant?,
         endDate: Instant?,
@@ -31,7 +31,7 @@ class LedgerRepositoryCustomImpl(
             .join(ledger.vehicle.member)
             .where(
                 memberEq(memberId),
-                vehicleEq(vehicleId),
+                vehicleIn(vehicleIds),
                 categoryEq(category),
                 dateBetween(startDate, endDate),
                 ledger.isDeleted.eq(false)
@@ -49,7 +49,7 @@ class LedgerRepositoryCustomImpl(
             .join(ledger.vehicle.member)
             .where(
                 memberEq(memberId),
-                vehicleEq(vehicleId),
+                vehicleIn(vehicleIds),
                 categoryEq(category),
                 dateBetween(startDate, endDate),
                 ledger.isDeleted.eq(false)
@@ -63,9 +63,11 @@ class LedgerRepositoryCustomImpl(
         return ledger.vehicle.member.id.eq(memberId)
     }
 
-    private fun vehicleEq(vehicleId: Long?): BooleanExpression? {
-        if (vehicleId == null || vehicleId == 0L) return null
-        return ledger.vehicle.id.eq(vehicleId)
+    private fun vehicleIn(vehicleIds: List<Long>?): BooleanExpression? {
+        if (vehicleIds == null || vehicleIds.isEmpty()) return null
+        // 0L이 포함되어 있는 경우 "전체 차량"의 의미이므로 필터링 제외 (null 반환)
+        if (vehicleIds.contains(0L)) return null
+        return ledger.vehicle.id.`in`(vehicleIds)
     }
 
     private fun categoryEq(category: LedgerCategory?): BooleanExpression? {

@@ -14,9 +14,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!isAuthenticated) return null;
 
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen w-full bg-gray-50">
             <Sidebar className="w-64 flex-none border-r bg-white" />
-            <main className="flex-1 overflow-y-auto p-8">
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
                 {children}
             </main>
         </div>

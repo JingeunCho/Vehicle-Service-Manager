@@ -14,8 +14,14 @@ data class LedgerResponse(
     val recordDate: Instant,
     val memo: String,
     val mileageAtRecord: Int,
+    val unitPrice: Long?,
+    val volume: Double?,
     /** 소모품 종류 (null이면 일반 차계부 기록) */
-    val maintenanceType: String?
+    val maintenanceType: String?,
+    /** 차량명 (닉네임 또는 모델명) */
+    val vehicleName: String,
+    /** 유종 (ICE, EV 등) */
+    val fuelType: String
 ) {
     companion object {
         fun of(ledger: Ledger): LedgerResponse {
@@ -28,7 +34,11 @@ data class LedgerResponse(
                 recordDate = ledger.recordDate,
                 memo = ledger.memo,
                 mileageAtRecord = ledger.mileageAtRecord,
-                maintenanceType = ledger.maintenanceType?.name
+                unitPrice = ledger.unitPrice?.toLong(),
+                volume = ledger.volume?.toDouble(),
+                maintenanceType = ledger.maintenanceType?.name,
+                vehicleName = ledger.vehicle.name ?: ledger.vehicle.carModel,
+                fuelType = ledger.vehicle.fuelType.name
             )
         }
     }

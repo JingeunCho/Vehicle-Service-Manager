@@ -49,8 +49,13 @@ class Vehicle(
     var spec: VehicleSpec? = null
 }
 
-enum class FuelType {
-    PREMIUM_GASOLINE, REGULAR_GASOLINE, DIESEL, LPG, EV, HYDROGEN
+enum class FuelType(val description: String) {
+    PREMIUM_GASOLINE("고급 휘발유"),
+    REGULAR_GASOLINE("휘발유"),
+    DIESEL("디젤"),
+    LPG("LPG"),
+    EV("전기"),
+    HYDROGEN("수소")
 }
 
 enum class DriveType {

@@ -21,3 +21,6 @@ backend/logs/
 /backend/module-core/build/
 /backend/module-web/build/
 /backend/module-bot/build/
+/backend/module-bot/bin/
+/backend/module-core/bin/
+/backend/module-web/bin/
