@@ -51,8 +51,16 @@ class AuthController(
         val authentication = authenticationManagerBuilder.`object`.authenticate(authenticationToken)
         
         val token = jwtTokenProvider.generateToken(authentication.name)
+        val member = memberService.getMemberByEmail(authentication.name)
         
-        return ResponseEntity.ok(TokenResponse(token = token, accessToken = token))
+        return ResponseEntity.ok(
+            TokenResponse(
+                token = token, 
+                accessToken = token, 
+                email = member.email, 
+                nickname = member.nickname
+            )
+        )
     }
     
     @GetMapping("/me")

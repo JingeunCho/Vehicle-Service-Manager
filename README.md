@@ -142,6 +142,52 @@ npm run dev
 
 ---
 
+## 🏗️ 향후 아키텍처 로드맵 (Future Architecture)
+
+시스템의 확장성과 대량 데이터 처리 능력을 강화하기 위해 **이벤트 기반 아키텍처(EDA)**로의 전환을 계획하고 있습니다.
+
+```mermaid
+graph LR
+    subgraph "Ingestion Layer"
+        Bot[module-bot]
+        Card[module-card-api]
+        Disco[module-discord]
+    end
+    
+    subgraph "Messaging (Kafka)"
+        Topic((Raw Transaction Events))
+        Alerts((Maintenance Alerts))
+    end
+    
+    subgraph "Persistence Layer (Reactive)"
+        Writer[module-writer / R2DBC]
+        DB[(MariaDB)]
+    end
+
+    subgraph "Notification Layer"
+        Push[module-push / Alarm]
+        Tel[Telegram / FCM]
+    end
+    
+    Bot -->|Normalize & Publish| Topic
+    Card -->|Normalize & Publish| Topic
+    Disco -->|Normalize & Publish| Topic
+    Topic -->|Consume & Validate| Writer
+    Writer -->|Async Write| DB
+    Writer -->|Detect Needs| Alerts
+    Alerts -->|Consume & Notify| Push
+    Push -->|Send| Tel
+```
+
+### 주요 추진 방향
+1. **데이터 정규화 (Normalization)**: 텔레그램, 카드사 API 등 다양한 출처의 데이터를 표준 규격(Canonical Schema)으로 변환하여 시스템 일관성 확보.
+2. **비동기 파이프라인 (Kafka)**: 메시지 브로커를 통한 입력 모듈과 저장 모듈의 완전한 분리(Decoupling) 및 장애 내구성 확보.
+3. **리액티브 쓰기 (Reactive Writer)**: Spring WebFlux와 R2DBC를 활용하여 대량의 카드 내역 유입 시에도 최소한의 리소스로 고성능 처리가 가능한 전용 모듈 운영.
+4. **전용 알림 모듈 (Push Alarm)**: 정비 주기 도래나 이상 징후 감지 시 Kafka를 통해 알림 이벤트를 발행하고, 이를 전용 모듈이 수신하여 텔레그램, App Push 등 다양한 채널로 발송하는 구조 구축.
+5. **멱등성 보장 (Idempotency)**: 승인 번호 및 일시 기반의 중복 체크 로직을 통해 데이터의 무결성 유지.
+
+---
+
 ## 🤝 컨벤션 (Convention)
 - 모든 문서 및 커밋 메시지는 **한글**을 우선적으로 사용합니다.
 - 코드 변경 사항은 반드시 관련 테스트 또는 검증 과정을 거칩니다.

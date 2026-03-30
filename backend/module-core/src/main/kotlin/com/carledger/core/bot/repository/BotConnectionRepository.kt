@@ -8,4 +8,5 @@ interface BotConnectionRepository : JpaRepository<BotConnection, Long> {
     fun findByOtpTokenAndIsDeletedFalse(otpToken: String): BotConnection?
     fun findByMemberIdAndPlatformTypeAndIsDeletedFalse(memberId: Long, platformType: PlatformType): BotConnection?
     fun findByPlatformUserIdAndPlatformTypeAndIsDeletedFalse(platformUserId: String, platformType: PlatformType): BotConnection?
+    fun findAllByMemberEmailAndPlatformTypeAndIsDeletedFalse(email: String, platformType: PlatformType): List<BotConnection>
 }

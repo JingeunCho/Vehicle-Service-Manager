@@ -52,4 +52,32 @@ class MemberService(
     fun getMemberSettings(memberId: Long): MemberSettings? {
         return memberSettingsRepository.findByMemberId(memberId)
     }
+
+    @Transactional
+    fun updateProfile(email: String, nickname: String, phoneNumber: String?, preferredRegion: String?): Member {
+        val member = getMemberByEmail(email)
+        
+        // 닉네임이 변경된 경우에만 중복 체크
+        if (member.nickname != nickname && checkNicknameDuplicate(nickname)) {
+            throw IllegalArgumentException("이미 사용 중인 닉네임입니다.")
+        }
+        
+        member.nickname = nickname
+        member.phoneNumber = phoneNumber
+        member.preferredRegion = preferredRegion
+        
+        return member
+    }
+    @Transactional
+    fun updatePassword(
+        email: String,
+        validateCurrentPassword: (String) -> Boolean,
+        newEncodedPassword: String
+    ) {
+        val member = getMemberByEmail(email)
+        if (!validateCurrentPassword(member.password)) {
+            throw IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.")
+        }
+        member.password = newEncodedPassword
+    }
 }

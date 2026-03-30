@@ -183,9 +183,13 @@ class LedgerController(
         val analytics = ledgerService.getDashboardRecentHistory(vehicleIds, authentication.name)
         
         @Suppress("UNCHECKED_CAST")
+        val recentRefuelMaps = analytics["recentRefuel"] as List<Map<String, Any>>
+        
         return ResponseEntity.ok(DashboardHistoryResponse(
             recentMaintenance = (analytics["recentMaintenance"] as List<Ledger>).map { LedgerResponse.of(it) },
-            recentRefuel = (analytics["recentRefuel"] as List<Ledger>).map { LedgerResponse.of(it) }
+            recentRefuel = recentRefuelMaps.map { 
+                LedgerResponse.of(it["ledger"] as Ledger, it["efficiency"] as? Double)
+            }
         ))
     }
 

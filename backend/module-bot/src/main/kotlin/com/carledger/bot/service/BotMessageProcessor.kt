@@ -13,16 +13,46 @@ class BotMessageProcessor(
     private val botConnectionService: BotConnectionService,
     private val vehicleService: VehicleService,
     private val ledgerService: LedgerService,
-    private val messageParser: MessageParser
+    private val messageParser: MessageParser,
+    private val passwordEncoder: org.springframework.security.crypto.password.PasswordEncoder
 ) {
 
-    fun processMessage(chatId: String, text: String): String {
+    fun processMessage(chatId: String, text: String): BotResponse {
         try {
             // 1. 연동 코드 (OTP) 처리
-            if (text.startsWith("/start ")) {
-                val otp = text.removePrefix("/start ").trim()
-                botConnectionService.verifyOtpToken(otp, chatId)
-                return "✅ 텔레그램 연동이 완료되었습니다! 이제 지출 내역을 입력해 주세요.\n(예: 주유 고급유 50000원 15000km)"
+            if (text.startsWith("/start ") || text.startsWith("/start@")) {
+                val commandParts = text.split("\\s+".toRegex())
+                if (commandParts.size >= 4) {
+                    val otp = commandParts[1].trim()
+                    val email = commandParts[2].trim()
+                    val password = commandParts[3].trim()
+                    
+                    botConnectionService.verifyOtpToken(otp, chatId, email) { storedPassword ->
+                        passwordEncoder.matches(password, storedPassword)
+                    }
+                    
+                    return BotResponse("✅ 텔레그램 연동이 완료되었습니다! (30일간 유효)\n아래 버튼을 눌러 관리할 차량을 선택해 주세요.", listOf(
+                        BotButton("내 차량 목록 보기", "LIST_VEHICLES")
+                    ))
+                } else if (commandParts.size > 1) {
+                    return BotResponse("⚠️ 보안 강화를 위해 ID/PW 입력이 필요합니다.\n`/start [OTP] [Email] [Password]` 형식으로 보내주세요.")
+                }
+            }
+
+            if (text == "/start" || text.startsWith("/start@")) {
+                return try {
+                    val member = botConnectionService.getMemberByPlatformUserId(chatId, PlatformType.TELEGRAM)
+                    val vehicles = vehicleService.getMyVehicles(member.email)
+                    if (vehicles.isEmpty()) {
+                        BotResponse("❌ 등록된 차량이 없습니다. 웹 대시보드에서 차량을 먼저 등록해 주세요.")
+                    } else {
+                        BotResponse("🚗 관리할 차량을 선택해 주세요:", vehicles.map { 
+                            BotButton("${it.name} (${it.licensePlate})", "SELECT_VEHICLE_${it.id}")
+                        })
+                    }
+                } catch (e: Exception) {
+                    BotResponse("👋 안녕하세요! 차계부 봇입니다. 서비스를 이용하시려면 웹 대시보드에서 발급받은 /start [OTP] 코드를 먼저 전송해 주세요.")
+                }
             }
 
             // 2. 메시지 파싱
@@ -31,12 +61,12 @@ class BotMessageProcessor(
             // 3. 계정 확인
             val member = botConnectionService.getMemberByPlatformUserId(chatId, PlatformType.TELEGRAM)
             
-            // 4. 차량 연결 우선순위 확인
+            // 4. 차량 선택 확인 (임시로 첫 번째 차량 또는 세션 기반 선택 필요)
             val vehicles = vehicleService.getMyVehicles(member.email)
             if (vehicles.isEmpty()) {
-                return "❌ 등록된 차량이 없습니다. 웹 대시보드에서 차량을 먼저 등록해 주세요."
+                return BotResponse("❌ 등록된 차량이 없습니다. 웹 대시보드에서 차량을 먼저 등록해 주세요.")
             }
-            // 임시로 보유 차량 중 첫 번째 차량에 지출 기록
+            // TODO: 세션에 저장된 차량 ID를 사용하도록 개선 예정 (Phase 1에서는 첫번째 차량 유지)
             val defaultVehicle = vehicles.first()
 
             // 5. 차계부 기록
@@ -51,14 +81,26 @@ class BotMessageProcessor(
                 title = parsedMessage.title,
             )
 
-            return "✅ 지출 기록 완료!\n" +
+            return BotResponse("✅ 지출 기록 완료!\n" +
                    "차량: ${defaultVehicle.name}\n" +
                    "분류: ${ledger.category.name}\n" +
                    "금액: ${ledger.amount}원" +
-                   (parsedMessage.mileage?.let { "\n누적 주행거리: ${it}km" } ?: "")
+                   (parsedMessage.mileage?.let { "\n누적 주행거리: ${it}km" } ?: ""))
 
         } catch (e: Exception) {
-            return "❗️ 오류 발생: ${e.message}"
+            return BotResponse("❗️ 오류 발생: ${e.message}")
+        }
+    }
+
+    fun processCallback(chatId: String, data: String): BotResponse {
+        return when {
+            data == "LIST_VEHICLES" -> processMessage(chatId, "/start")
+            data.startsWith("SELECT_VEHICLE_") -> {
+                val vehicleId = data.removePrefix("SELECT_VEHICLE_").toLong()
+                // TODO: 세션에 사용자별 선택 차량 저장 로직 추가 예정
+                BotResponse("✅ 차량이 선택되었습니다. (ID: $vehicleId)\n이제 기록을 시작해 보세요!")
+            }
+            else -> BotResponse("❓ 알 수 없는 명령입니다.")
         }
     }
 }

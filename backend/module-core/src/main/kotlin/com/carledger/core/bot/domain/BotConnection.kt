@@ -3,6 +3,7 @@ package com.carledger.core.bot.domain
 import com.carledger.core.common.domain.BaseEntity
 import com.carledger.core.member.domain.Member
 import jakarta.persistence.*
+import java.time.Instant
 
 @Entity
 @Table(name = "bot_connection", catalog = "car_ledger")
@@ -26,7 +27,10 @@ class BotConnection(
     var otpToken: String,
 
     @Column(name = "is_verified", nullable = false)
-    var isVerified: Boolean = false
+    var isVerified: Boolean = false,
+
+    @Column(name = "expires_at")
+    var expiresAt: Instant? = null
 
 ) : BaseEntity()
 

@@ -20,7 +20,7 @@ export default function LoginPage() {
             const receivedToken = data.token || data.accessToken;
 
             if (receivedToken) {
-                login(receivedToken, email)
+                login(receivedToken, data.email || email, data.nickname || '사용자')
             } else {
                 setErrorMsg('서버로부터 유효한 토큰(`token` 또는 `accessToken` 필드)을 받지 못했습니다.')
             }

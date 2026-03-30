@@ -21,10 +21,12 @@ data class LedgerResponse(
     /** 차량명 (닉네임 또는 모델명) */
     val vehicleName: String,
     /** 유종 (ICE, EV 등) */
-    val fuelType: String
+    val fuelType: String,
+    /** 이번 주유/충전 시 계산된 구간 연비 (null 가능) */
+    val calculatedEfficiency: Double? = null
 ) {
     companion object {
-        fun of(ledger: Ledger): LedgerResponse {
+        fun of(ledger: Ledger, calculatedEfficiency: Double? = null): LedgerResponse {
             return LedgerResponse(
                 id = ledger.id,
                 vehicleId = ledger.vehicle.id,
@@ -38,7 +40,8 @@ data class LedgerResponse(
                 volume = ledger.volume?.toDouble(),
                 maintenanceType = ledger.maintenanceType?.name,
                 vehicleName = ledger.vehicle.name ?: ledger.vehicle.carModel,
-                fuelType = ledger.vehicle.fuelType.name
+                fuelType = ledger.vehicle.fuelType.name,
+                calculatedEfficiency = calculatedEfficiency
             )
         }
     }

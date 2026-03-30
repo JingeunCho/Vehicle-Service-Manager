@@ -162,28 +162,44 @@ class LedgerService(
         val ledgers = getAllLedgersForAnalytics(vehicleIds, email)
         val zoneId = ZoneId.of("Asia/Seoul")
         val now = ZonedDateTime.now(zoneId)
-        val firstDayOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0).toInstant()
+        val thirtyDaysAgo = now.minusDays(30).withHour(0).withMinute(0).withSecond(0).withNano(0).toInstant()
 
         val totalExpense = ledgers
-            .filter { it.recordDate.isAfter(firstDayOfMonth) || it.recordDate == firstDayOfMonth }
+            .filter { it.recordDate.isAfter(thirtyDaysAgo) || it.recordDate == thirtyDaysAgo }
             .sumOf { it.amount.toLong() }
 
-        val currentMonthRefuelLedgers = ledgers
-            .filter { it.category == LedgerCategory.REFUEL && (it.recordDate.isAfter(firstDayOfMonth) || it.recordDate == firstDayOfMonth) }
+        val recentRefuelLedgers = ledgers
+            .filter { it.category == LedgerCategory.REFUEL && (it.recordDate.isAfter(thirtyDaysAgo) || it.recordDate == thirtyDaysAgo) }
         
-        val fuelPrices = currentMonthRefuelLedgers
+        val fuelPrices = recentRefuelLedgers
             .filter { it.vehicle.fuelType != FuelType.EV }
             .mapNotNull { it.unitPrice?.toInt() }
         val avgFuelPrice = if (fuelPrices.isNotEmpty()) fuelPrices.average().toInt() else 0
 
-        val electricityPrices = currentMonthRefuelLedgers
+        val electricityPrices = recentRefuelLedgers
             .filter { it.vehicle.fuelType == FuelType.EV }
             .mapNotNull { it.unitPrice?.toInt() }
         val avgElectricityPrice = if (electricityPrices.isNotEmpty()) electricityPrices.average().toInt() else 0
 
-        val efficiencies = calculateEfficiencies(ledgers, zoneId)
-        val recentAvgMileage = calculateRecentAvg(efficiencies.filter { it["fuelType"] != FuelType.EV })
-        val recentAvgEvEfficiency = calculateRecentAvg(efficiencies.filter { it["fuelType"] == FuelType.EV })
+        // 최근 30일간의 주유 기록들에 대한 구간 연비 평균 계산
+        fun calculatePeriodAvg(refuels: List<Ledger>): Double {
+            val intervalEfficiencies = refuels.mapNotNull { curr ->
+                val prev = ledgers
+                    .filter { it.vehicle.id == curr.vehicle.id && it.recordDate.isBefore(curr.recordDate) && it.category == LedgerCategory.REFUEL }
+                    .maxByOrNull { it.recordDate }
+
+                if (prev != null && curr.volume != null && curr.volume!!.toDouble() > 0) {
+                    val distance = curr.mileageAtRecord - prev.mileageAtRecord
+                    if (distance > 0) distance.toDouble() / curr.volume!!.toDouble() else null
+                } else null
+            }
+            return if (intervalEfficiencies.isNotEmpty()) {
+                Math.round(intervalEfficiencies.average() * 10) / 10.0
+            } else 0.0
+        }
+
+        val recentAvgMileage = calculatePeriodAvg(recentRefuelLedgers.filter { it.vehicle.fuelType != FuelType.EV })
+        val recentAvgEvEfficiency = calculatePeriodAvg(recentRefuelLedgers.filter { it.vehicle.fuelType == FuelType.EV })
 
         return mapOf(
             "totalExpenseThisMonth" to totalExpense,
@@ -234,10 +250,28 @@ class LedgerService(
             .sortedByDescending { it.recordDate }
             .take(4)
 
-        val recentRefuel = ledgers
-            .filter { it.category == LedgerCategory.REFUEL }
+        val allRefuels = ledgers
+            .filter { it.category == LedgerCategory.REFUEL && it.volume != null && it.volume!!.toDouble() > 0 }
             .sortedByDescending { it.recordDate }
-            .take(4)
+
+        val recentRefuel = allRefuels.take(4).map { curr ->
+            // 동일 차량의 이전 주유 기록 찾기
+            val prev = allRefuels
+                .filter { it.vehicle.id == curr.vehicle.id && it.recordDate.isBefore(curr.recordDate) }
+                .maxByOrNull { it.recordDate }
+
+            val efficiency = if (prev != null) {
+                val distance = curr.mileageAtRecord - prev.mileageAtRecord
+                if (distance > 0) {
+                    Math.round((distance.toDouble() / curr.volume!!.toDouble()) * 10) / 10.0
+                } else null
+            } else null
+
+            mapOf(
+                "ledger" to curr,
+                "efficiency" to efficiency
+            )
+        }
 
         return mapOf(
             "recentMaintenance" to recentMaintenance,
@@ -250,8 +284,8 @@ class LedgerService(
         val zoneId = ZoneId.of("Asia/Seoul")
         val efficiencies = calculateEfficiencies(ledgers, zoneId)
 
-        val iceEfficiencies = efficiencies.filter { it["fuelType"] != FuelType.EV }
-        val evEfficiencies = efficiencies.filter { it["fuelType"] == FuelType.EV }
+        val iceEfficiencies = efficiencies.filter { !(it["isEv"] as Boolean) }
+        val evEfficiencies = efficiencies.filter { it["isEv"] as Boolean }
 
         return mapOf(
             "mileageTrend" to iceEfficiencies.takeLast(10).map { 
@@ -264,30 +298,51 @@ class LedgerService(
     }
 
     private fun calculateEfficiencies(ledgers: List<Ledger>, zoneId: ZoneId): List<Map<String, Any>> {
-        return ledgers
-            .filter { it.category == LedgerCategory.REFUEL && it.volume != null && it.volume!!.toLong() > 0 }
+        // 1. 주유 구간별 데이터(거리, 주유량) 산출
+        val intervals = ledgers
+            .filter { it.category == LedgerCategory.REFUEL && it.volume != null && it.volume!!.toDouble() > 0 }
             .groupBy { it.vehicle.id }
             .flatMap { (_, vehicleLedgers) ->
                 val sortedLedgers = vehicleLedgers.sortedBy { it.recordDate }
                 val results = mutableListOf<Map<String, Any>>()
                 for (i in 1 until sortedLedgers.size) {
                     val curr = sortedLedgers[i]
-                    val prev = sortedLedgers[i - 1]
+                    val prev = sortedLedgers[i-1]
                     val distance = curr.mileageAtRecord - prev.mileageAtRecord
                     if (distance > 0) {
-                        val efficiency = distance.toDouble() / curr.volume!!.toDouble()
-                        val monthStr = "${curr.recordDate.atZone(zoneId).monthValue}월"
                         results.add(mapOf(
-                            "month" to monthStr, 
-                            "efficiency" to Math.round(efficiency * 10) / 10.0, 
-                            "time" to curr.recordDate,
-                            "fuelType" to curr.vehicle.fuelType
+                            "distance" to distance.toDouble(),
+                            "volume" to curr.volume!!.toDouble(),
+                            "yearMonth" to curr.recordDate.atZone(zoneId).let { 
+                                "${it.year}-${it.monthValue.toString().padStart(2, '0')}" 
+                            },
+                            "monthLabel" to "${curr.recordDate.atZone(zoneId).monthValue}월",
+                            "isEv" to (curr.vehicle.fuelType == FuelType.EV),
+                            "fuelType" to curr.vehicle.fuelType, // 원본 유종 정보 유지 (필요시)
+                            "time" to curr.recordDate
                         ))
                     }
                 }
                 results
             }
-            .sortedBy { it["time"] as Instant }
+
+        // 2. 월별/유종대분류(EV 여부) 그룹화 및 가중 평균 연비 계산
+        return intervals
+            .groupBy { (it["yearMonth"] as String) + "_" + (it["isEv"] as Boolean) }
+            .map { (_, group) ->
+                val totalDistance = group.sumOf { it["distance"] as Double }
+                val totalVolume = group.sumOf { it["volume"] as Double }
+                val efficiency = totalDistance / totalVolume
+                val firstEntry = group.first()
+                mapOf(
+                    "month" to firstEntry["monthLabel"] as String,
+                    "efficiency" to Math.round(efficiency * 10) / 10.0,
+                    "time" to firstEntry["time"] as Instant,
+                    "isEv" to firstEntry["isEv"] as Boolean,
+                    "yearMonth" to firstEntry["yearMonth"] as String
+                )
+            }
+            .sortedBy { it["yearMonth"] as String }
     }
 
     private fun calculateRecentAvg(effs: List<Map<String, Any>>): Double {

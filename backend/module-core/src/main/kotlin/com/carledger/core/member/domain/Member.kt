@@ -20,6 +20,9 @@ class Member(
     var nickname: String,
 
     @Column(name = "preferred_region", length = 100)
-    var preferredRegion: String? = null
+    var preferredRegion: String? = null,
+
+    @Column(name = "phone_number", length = 20)
+    var phoneNumber: String? = null
 
 ) : BaseEntity()

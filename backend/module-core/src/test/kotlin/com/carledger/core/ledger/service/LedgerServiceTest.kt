@@ -17,6 +17,9 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.*
 
+import com.carledger.core.vehicle.domain.FuelType
+import org.junit.jupiter.api.Assertions.assertTrue
+
 class LedgerServiceTest {
 
     private lateinit var ledgerRepository: LedgerRepository
@@ -33,56 +36,44 @@ class LedgerServiceTest {
     }
 
     @Test
-    fun `test getDashboardAnalytics with real data`() {
+    fun `test getDashboardEfficiencyTrend with ICE and EV separation`() {
         // Given
         val email = "test@example.com"
         val member = Member(id = 1L, email = email, nickname = "Test")
-        val vehicle = Vehicle(id = 1L, member = member, name = "Car", carModel = "GT86", licensePlate = "12가1234", fuelType = "Gasoline")
+        val iceVehicle = Vehicle(id = 1L, member = member, name = "ICE", carModel = "GT86", licensePlate = "12가1234", fuelType = FuelType.REGULAR_GASOLINE)
+        val evVehicle = Vehicle(id = 2L, member = member, name = "EV", carModel = "Ioniq 5", licensePlate = "34나5678", fuelType = FuelType.EV)
         
-        val zoneId = ZoneId.of("Asia/Seoul")
-        val now = ZonedDateTime.now(zoneId)
+        val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
         val today = now.toInstant()
-        val lastMonth = now.minusMonths(1).toInstant()
+        val yesterday = now.minusDays(1).toInstant()
+        val bitEarlier = now.minusDays(2).toInstant()
 
         val ledgers = listOf(
-            // Fuel entry 1: 1000km
-            Ledger(
-                id = 1L, vehicle = vehicle, category = LedgerCategory.REFUEL, title = "Fuel 1",
-                recordDate = lastMonth, amount = BigDecimal.valueOf(50000), mileageAtRecord = 1000, 
-                unitPrice = BigDecimal.valueOf(1600), volume = BigDecimal.valueOf(31.25)
-            ),
-            // Fuel entry 2: 1500km (Today, adding 50L) -> Distance 500, Volume 50 -> 10km/L
-            Ledger(
-                id = 2L, vehicle = vehicle, category = LedgerCategory.REFUEL, title = "Fuel 2",
-                recordDate = today, amount = BigDecimal.valueOf(80000), mileageAtRecord = 1500, 
-                unitPrice = BigDecimal.valueOf(1600), volume = BigDecimal.valueOf(50.0)
-            ),
-            // Maintenance entry
-            Ledger(
-                id = 3L, vehicle = vehicle, category = LedgerCategory.MAINTENANCE, title = "Oil",
-                recordDate = today, amount = BigDecimal.valueOf(70000), mileageAtRecord = 1500
-            )
+            // ICE Interval 1: 100km / 10L = 10.0
+            Ledger(id = 1L, vehicle = iceVehicle, category = LedgerCategory.REFUEL, recordDate = yesterday, mileageAtRecord = 100, volume = BigDecimal.valueOf(10.0)),
+            Ledger(id = 2L, vehicle = iceVehicle, category = LedgerCategory.REFUEL, recordDate = bitEarlier, mileageAtRecord = 0, volume = BigDecimal.valueOf(10.0)),
+            
+            // EV Interval 1: 50km / 10kWh = 5.0
+            Ledger(id = 3L, vehicle = evVehicle, category = LedgerCategory.REFUEL, recordDate = today, mileageAtRecord = 50, volume = BigDecimal.valueOf(10.0)),
+            Ledger(id = 4L, vehicle = evVehicle, category = LedgerCategory.REFUEL, recordDate = yesterday, mileageAtRecord = 0, volume = BigDecimal.valueOf(10.0))
         )
 
         `when`(memberService.getMemberByEmail(email)).thenReturn(member)
-        // Note: getAllLedgersForAnalytics uses findByCriteria with pageable. 
-        // For simplicity in this mock, we'll need to handle the repository call.
-        // But since LedgerService code I wrote calls getAllLedgersForAnalytics which calls findByCriteria:
-        `when`(ledgerRepository.findByCriteria(anyLong(), anyLong(), any(), any(), any(), any())).thenReturn(
+        `when`(ledgerRepository.findByCriteria(any(), any(), any(), any(), any(), any())).thenReturn(
             org.springframework.data.domain.PageImpl(ledgers)
         )
 
         // When
-        val result = ledgerService.getDashboardAnalytics(1L, email)
+        val result = ledgerService.getDashboardEfficiencyTrend(null, email)
 
         // Then
-        assertEquals(150000L, result["totalExpenseThisMonth"], "Total expense this month (Fuel2 80k + Oil 70k)")
-        assertEquals(1600, result["avgFuelPriceCurrentMonth"], "Avg fuel price (80000/50 = 1600 or directly unitPrice)")
-        assertEquals(10.0, result["recentAvgMileage"], "Mileage efficiency calculation: (1500-1000)/50 = 10.0")
+        val mileageTrend = result["mileageTrend"] as List<Map<String, Any>>
+        val evMileageTrend = result["evMileageTrend"] as List<Map<String, Any>>
         
-        val monthlyTrend = result["monthlyTrend"] as List<Map<String, Any>>
-        val currentMonthTrend = monthlyTrend.find { it["month"] == "${now.monthValue}월" }
-        val details = currentMonthTrend!!["details"] as List<Map<String, Any>>
-        assertEquals(150000L, details.find { it["carModel"] == "GT86" }!!["amount"])
+        assertEquals(1, mileageTrend.size, "ICE should have one entry for the month")
+        assertEquals(10.0, mileageTrend[0]["efficiency"], "ICE efficiency should be 100/10 = 10.0")
+        
+        assertEquals(1, evMileageTrend.size, "EV should have one entry for the month")
+        assertEquals(5.0, evMileageTrend[0]["efficiency"], "EV efficiency should be 50/10 = 5.0")
     }
 }

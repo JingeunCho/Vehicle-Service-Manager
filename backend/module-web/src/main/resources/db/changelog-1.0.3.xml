@@ -7,9 +7,25 @@
 
     <changeSet id="1.0.3-1" author="jingeun-cho">
         <comment>차량 보험 갱신일 시각 타입을 Instant(DATETIME(6))로 변경</comment>
-
-        <!-- Vehicle 테이블 insurance_date -->
         <modifyDataType tableName="vehicle" columnName="insurance_date" newDataType="DATETIME(6)"/>
+    </changeSet>
+
+    <changeSet id="1.0.3-2" author="antigravity">
+        <comment>Member 테이블에 전화번호(phone_number) 컬럼 추가</comment>
+        <addColumn tableName="member">
+            <column name="phone_number" type="VARCHAR(20)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="1.0.3-3" author="antigravity">
+        <comment>BotConnection 테이블에 OTP 유효기간(expires_at) 컬럼 추가</comment>
+        <addColumn tableName="bot_connection">
+            <column name="expires_at" type="DATETIME(6)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
     </changeSet>
 
 </databaseChangeLog>

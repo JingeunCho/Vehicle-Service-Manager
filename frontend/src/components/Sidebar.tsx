@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useVehicleContext } from '@/context/VehicleContext'
 
 export default function Sidebar({ className = "" }: { className?: string }) {
-    const { userEmail, logout } = useAuth()
+    const { nickname, logout } = useAuth()
     const { vehicles, selectedVehicleId, setSelectedVehicleId, isLoading } = useVehicleContext()
     const pathname = usePathname()
 
@@ -55,11 +55,14 @@ export default function Sidebar({ className = "" }: { className?: string }) {
 
             <div className="mt-auto pt-6 border-t border-gray-100">
                 <div className="text-sm font-medium text-gray-700 px-1 border-b border-gray-100 pb-3 mb-2">
-                    반갑습니다,<br /><span className="text-blue-600 font-bold block mt-1 truncate">{userEmail || '사용자'}</span>님!
+                    반갑습니다,<br /><span className="text-blue-600 font-bold block mt-1 truncate">{nickname || '사용자'}</span>님!
                 </div>
-                <button className="w-full py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                <Link href="/settings" className={`w-full block text-center py-2 rounded-lg text-sm font-medium transition ${pathname === '/settings'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-900 text-white hover:bg-gray-800'
+                    }`}>
                     설정 및 텔레그램 연동
-                </button>
+                </Link>
                 <button
                     onClick={logout}
                     className="w-full py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition"

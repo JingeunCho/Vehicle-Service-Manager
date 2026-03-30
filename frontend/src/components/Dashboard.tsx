@@ -139,33 +139,33 @@ export default function Dashboard() {
 
             {/* Widgets */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
-                    <p className="text-sm font-medium text-gray-500 mb-1">당월 실 지출액</p>
-                    <h3 className="text-3xl font-bold text-gray-900">₩ {summary.totalExpenseThisMonth.toLocaleString()}</h3>
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
+                    <p className="text-[13px] font-medium text-gray-500 mb-1">최근 30일 지출액</p>
+                    <h3 className="text-2xl font-bold text-gray-900">₩ {summary.totalExpenseThisMonth.toLocaleString()}</h3>
                 </div>
 
                 {vehicles?.some(v => dashboardVehicleIds.includes(v.id) && v.fuelType !== 'EV') && (
                     <>
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
-                            <p className="text-sm font-medium text-gray-500 mb-1">평균 주유 단가</p>
-                            <h3 className="text-3xl font-bold text-gray-900">₩ {summary.avgFuelPriceCurrentMonth.toLocaleString()} <span className="text-lg text-gray-500 font-normal">/ L</span></h3>
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
+                            <p className="text-[13px] font-medium text-gray-500 mb-1">최근 평균 주유 단가</p>
+                            <h3 className="text-2xl font-bold text-gray-900">₩ {summary.avgFuelPriceCurrentMonth.toLocaleString()} <span className="text-lg text-gray-500 font-normal">/ L</span></h3>
                         </div>
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
-                            <p className="text-sm font-medium text-gray-500 mb-1">최근 평균 연비</p>
-                            <h3 className="text-3xl font-bold text-gray-900">{summary.recentAvgMileage} <span className="text-lg text-gray-500 font-normal">km/L</span></h3>
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
+                            <p className="text-[13px] font-medium text-gray-500 mb-1">최근 30일 평균 연비</p>
+                            <h3 className="text-2xl font-bold text-gray-900">{summary.recentAvgMileage} <span className="text-lg text-gray-500 font-normal">km/L</span></h3>
                         </div>
                     </>
                 )}
 
                 {vehicles?.some(v => dashboardVehicleIds.includes(v.id) && v.fuelType === 'EV') && (
                     <>
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
-                            <p className="text-sm font-medium text-gray-500 mb-1">평균 충전 단가</p>
-                            <h3 className="text-3xl font-bold text-gray-900">₩ {summary.avgElectricityPriceCurrentMonth.toLocaleString()} <span className="text-lg text-gray-500 font-normal">/ kWh</span></h3>
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
+                            <p className="text-[13px] font-medium text-gray-500 mb-1">최근 평균 충전 단가</p>
+                            <h3 className="text-2xl font-bold text-gray-900">₩ {summary.avgElectricityPriceCurrentMonth.toLocaleString()} <span className="text-lg text-gray-500 font-normal">/ kWh</span></h3>
                         </div>
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
-                            <p className="text-sm font-medium text-gray-500 mb-1">최근 평균 전비</p>
-                            <h3 className="text-3xl font-bold text-gray-900">{summary.recentAvgEvEfficiency} <span className="text-lg text-gray-500 font-normal">km/kWh</span></h3>
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center transition hover:shadow-md">
+                            <p className="text-[13px] font-medium text-gray-500 mb-1">최근 30일 평균 전비</p>
+                            <h3 className="text-2xl font-bold text-gray-900">{summary.recentAvgEvEfficiency} <span className="text-lg text-gray-500 font-normal">km/kWh</span></h3>
                         </div>
                     </>
                 )}
@@ -243,12 +243,12 @@ export default function Dashboard() {
                 {/* 3rd Column: Integrated History Card */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden hover:shadow-md transition h-full">
                     {/* Top Section: Recent Maintenance */}
-                    <div className="p-5 flex-1 border-b border-gray-50 overflow-hidden">
-                        <div className="flex items-center justify-between mb-3">
+                    <div className="py-4 px-5 flex-1 border-b border-gray-50">
+                        <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-bold text-gray-800">최근 정비 내역</h4>
                             <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">TOP 4</span>
                         </div>
-                        <div className="space-y-2.5">
+                        <div className="space-y-2">
                             {history.recentMaintenance.length > 0 ? (
                                 history.recentMaintenance.map((item: any) => (
                                     <div key={item.id} className="flex items-center justify-between group">
@@ -269,12 +269,12 @@ export default function Dashboard() {
                     </div>
 
                     {/* Bottom Section: Recent Refuel */}
-                    <div className="p-5 flex-1 bg-gray-50/30 overflow-hidden">
-                        <div className="flex items-center justify-between mb-3">
+                    <div className="py-4 px-5 flex-1 bg-gray-50/30">
+                        <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-bold text-gray-800">최근 주유/충전 내역</h4>
                             <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-bold">TOP 4</span>
                         </div>
-                        <div className="space-y-2.5">
+                        <div className="space-y-2">
                             {history.recentRefuel.length > 0 ? (
                                 history.recentRefuel.map((item: any) => (
                                     <div key={item.id} className="flex items-center justify-between group">
@@ -286,8 +286,9 @@ export default function Dashboard() {
                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                 <span className="text-[10px] text-gray-400">{formatToDateTimeShort(item.recordDate)}</span>
                                                 {item.volume && (
-                                                    <span className="text-[9px] text-orange-500 font-medium">
-                                                        ({item.volume.toFixed(1)}{getFuelTypeName(item.fuelType) === '전기' ? 'kWh' : 'L'})
+                                                    <span className="text-[9px] text-orange-500 font-medium whitespace-nowrap">
+                                                        ({item.volume.toFixed(1)}{getFuelTypeName(item.fuelType) === '전기' ? 'kWh' : 'L'}
+                                                        {item.calculatedEfficiency && ` / ${item.calculatedEfficiency}${getFuelTypeName(item.fuelType) === '전기' ? 'km/kWh' : 'km/L'}`})
                                                     </span>
                                                 )}
                                             </div>

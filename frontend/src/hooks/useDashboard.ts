@@ -104,3 +104,22 @@ export const useDashboardEfficiency = (vehicleIds: number[]) => {
         },
     });
 };
+
+export const useTelegramStatus = () => {
+    return useQuery<{ isLinked: boolean; otp: string }>({
+        queryKey: ['bot', 'telegram', 'status'],
+        queryFn: async () => {
+            const { data } = await api.get('/bot/telegram/status');
+            return data;
+        },
+    });
+};
+
+export const useGenerateTelegramOtp = () => {
+    return {
+        generate: async () => {
+            const { data } = await api.post('/bot/telegram/otp');
+            return data.otp as string;
+        }
+    };
+};

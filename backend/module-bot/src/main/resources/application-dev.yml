@@ -3,8 +3,8 @@ server:
 
 telegram:
   bot:
-    name: ${TELEGRAM_BOT_NAME:your_bot_name}
-    token: ${TELEGRAM_BOT_TOKEN:your_bot_token}
+    username: ${TELEGRAM_BOT_USERNAME:KR_CM_bot}
+    token: ${TELEGRAM_BOT_TOKEN:8396666705:AAHRLS1Hw7_ecY7z8gyERzqB9EX7VE3ZBD0}
 
 spring:
   jpa:

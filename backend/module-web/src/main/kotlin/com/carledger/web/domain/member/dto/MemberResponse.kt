@@ -8,6 +8,7 @@ data class MemberResponse(
     val email: String,
     val nickname: String,
     val preferredRegion: String?,
+    val phoneNumber: String?,
     val isDarkMode: Boolean,
     val telegramBotToken: String?
 ) {
@@ -18,6 +19,7 @@ data class MemberResponse(
                 email = member.email,
                 nickname = member.nickname,
                 preferredRegion = member.preferredRegion,
+                phoneNumber = member.phoneNumber,
                 isDarkMode = settings?.isDarkMode ?: false,
                 telegramBotToken = settings?.telegramBotToken
             )
