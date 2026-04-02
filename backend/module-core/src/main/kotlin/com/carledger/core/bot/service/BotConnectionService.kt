@@ -7,6 +7,7 @@ import com.carledger.core.member.domain.Member
 import com.carledger.core.member.service.MemberService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
